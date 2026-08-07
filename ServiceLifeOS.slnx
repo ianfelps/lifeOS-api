@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/ServiceLifeOS.Tests/ServiceLifeOS.Tests.csproj" />
+  </Folder>
+  <Project Path="src/ServiceLifeOS.Api/ServiceLifeOS.Api.csproj" />
+  <Project Path="src/ServiceLifeOS.Application/ServiceLifeOS.Application.csproj" />
+  <Project Path="src/ServiceLifeOS.Domain/ServiceLifeOS.Domain.csproj" />
+  <Project Path="src/ServiceLifeOS.Infrastructure/ServiceLifeOS.Infrastructure.csproj" />
+</Solution>

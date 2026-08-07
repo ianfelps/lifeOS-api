@@ -1,0 +1,58 @@
+# Build output
+bin/
+obj/
+out/
+publish/
+
+# User-specific files
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio
+.vs/
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage/
+coverage-*/
+coverage*.xml
+*.cobertura.xml
+*.opencover.xml
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# .NET tooling
+project.lock.json
+project.fragment.lock.json
+artifacts/
+.build-check/
+*.binlog
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+
+# Logs
+*.log
+logs/
+
+# Local environment/config overrides
+.env
+.env.*
+appsettings.Local.json
+appsettings.*.Local.json
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store

@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: service-life-os-postgres-dev
+    environment:
+      POSTGRES_DB: service-life-os-dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: templatepass
+    ports:
+      - "5432:5432"
+    volumes:
+      - template-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d service-life-os-dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  template-postgres-data:

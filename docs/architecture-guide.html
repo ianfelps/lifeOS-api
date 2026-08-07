@@ -1,0 +1,1354 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ServiceLifeOS - Guia da Arquitetura em Modo Jogo</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0d1117;
+      --panel: #151b23;
+      --panel-2: #1d2633;
+      --text: #e6edf3;
+      --muted: #9fb0c3;
+      --line: #303d4f;
+      --api: #58a6ff;
+      --app: #56d364;
+      --domain: #f2cc60;
+      --infra: #ff7b72;
+      --test: #d2a8ff;
+      --shadow: rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        radial-gradient(circle at 15% 10%, rgba(88, 166, 255, 0.14), transparent 28rem),
+        radial-gradient(circle at 85% 20%, rgba(86, 211, 100, 0.10), transparent 26rem),
+        var(--bg);
+      background-size: 34px 34px, 34px 34px, auto, auto, auto;
+      color: var(--text);
+      font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+      line-height: 1.6;
+    }
+
+    a {
+      color: var(--api);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    header {
+      min-height: 70vh;
+      display: grid;
+      align-items: end;
+      padding: 56px 0 36px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+      gap: 32px;
+      align-items: end;
+    }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      color: var(--app);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 880px;
+      margin: 0;
+      font-size: clamp(2.6rem, 6vw, 5.6rem);
+      line-height: 0.95;
+      letter-spacing: 0;
+      text-wrap: balance;
+    }
+
+    .lead {
+      max-width: 740px;
+      margin: 22px 0 0;
+      color: var(--muted);
+      font-size: 1.08rem;
+    }
+
+    .hud {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(21, 27, 35, 0.82);
+      box-shadow: 0 22px 60px var(--shadow);
+      overflow: hidden;
+    }
+
+    .hud-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 16px;
+      background: var(--panel-2);
+      border-bottom: 1px solid var(--line);
+      font-weight: 800;
+    }
+
+    .hud-body {
+      padding: 16px;
+    }
+
+    .stat {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 12px;
+      align-items: center;
+      margin: 12px 0;
+    }
+
+    .bar {
+      height: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #0a0f16;
+      border: 1px solid var(--line);
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, var(--api), var(--app));
+    }
+
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(13, 17, 23, 0.9);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+    }
+
+    .nav-inner {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 10px 0;
+    }
+
+    .nav-inner a {
+      flex: 0 0 auto;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--text);
+      font-size: 0.92rem;
+    }
+
+    main {
+      padding: 34px 0 70px;
+    }
+
+    section {
+      margin: 34px 0;
+      padding: 28px 0;
+      border-bottom: 1px solid rgba(48, 61, 79, 0.72);
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: clamp(1.7rem, 3vw, 2.5rem);
+      letter-spacing: 0;
+      text-wrap: balance;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 1.08rem;
+      letter-spacing: 0;
+      text-wrap: balance;
+    }
+
+    p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      overflow-wrap: break-word;
+      text-wrap: pretty;
+    }
+
+    code {
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: #0a0f16;
+      color: #dbe7f3;
+      border: 1px solid rgba(48, 61, 79, 0.8);
+      font-family: Consolas, Monaco, monospace;
+      font-size: 0.92em;
+      overflow-wrap: anywhere;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .levels {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .level,
+    .panel,
+    .flow-step {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(21, 27, 35, 0.88);
+      box-shadow: 0 16px 38px var(--shadow);
+      min-width: 0;
+    }
+
+    .level {
+      min-height: 172px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .level:before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 5px;
+      background: var(--accent);
+    }
+
+    .api { --accent: var(--api); }
+    .app { --accent: var(--app); }
+    .domain { --accent: var(--domain); }
+    .infra { --accent: var(--infra); }
+    .test { --accent: var(--test); }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .level h3 {
+      margin-top: 14px;
+    }
+
+    .panel {
+      padding: 18px;
+    }
+
+    .panel strong {
+      color: var(--text);
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+      margin: 14px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .list li {
+      padding-left: 18px;
+      position: relative;
+      color: var(--muted);
+      overflow-wrap: break-word;
+    }
+
+    .list li:before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.72em;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent, var(--api));
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .flow-step {
+      min-height: 150px;
+      padding: 15px;
+      border-top: 4px solid var(--accent, var(--api));
+    }
+
+    .flow-step .num {
+      color: var(--accent, var(--api));
+      font-weight: 900;
+      font-size: 0.86rem;
+    }
+
+    .codebox {
+      margin-top: 14px;
+      padding: 16px;
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #080c12;
+      color: #dbe7f3;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 0.92rem;
+      white-space: pre;
+    }
+
+    .arena {
+      margin-top: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #0a0f16;
+    }
+
+    .arena-row {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .arena-row:last-child {
+      border-bottom: 0;
+    }
+
+    .arena-label {
+      padding: 14px;
+      font-weight: 900;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.04);
+      border-right: 1px solid var(--line);
+    }
+
+    .arena-content {
+      padding: 14px;
+      color: var(--muted);
+    }
+
+    .visual-stage {
+      margin-top: 20px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        #0a0f16;
+      background-size: 26px 26px;
+      overflow: hidden;
+    }
+
+    .world-map {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .map-zone {
+      min-height: 210px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(21, 27, 35, 0.94);
+      position: relative;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .map-zone:before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 6px;
+      background: var(--accent);
+    }
+
+    .map-zone:after {
+      content: "";
+      position: absolute;
+      right: -34px;
+      bottom: -34px;
+      width: 92px;
+      height: 92px;
+      border: 1px solid var(--accent);
+      border-radius: 50%;
+      opacity: 0.18;
+    }
+
+    .map-zone {
+      animation: zoneGlow 5.2s ease-in-out infinite;
+    }
+
+    .map-zone:nth-child(2) {
+      animation-delay: 0.35s;
+    }
+
+    .map-zone:nth-child(3) {
+      animation-delay: 0.7s;
+    }
+
+    .map-zone:nth-child(4) {
+      animation-delay: 1.05s;
+    }
+
+    .zone-icon {
+      width: 54px;
+      height: 54px;
+      margin: 8px 0 14px;
+      border: 2px solid var(--accent);
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      color: var(--accent);
+      font-weight: 900;
+      font-size: 1.35rem;
+      background: rgba(255, 255, 255, 0.04);
+      animation: iconPulse 2.8s ease-in-out infinite;
+    }
+
+    .map-zone h3,
+    .diagram-card h3,
+    .decision-card h3 {
+      color: var(--text);
+    }
+
+    .map-zone p {
+      margin-bottom: 0;
+    }
+
+    .pipe-map {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(120px, 1fr));
+      gap: 12px;
+      align-items: center;
+      margin-top: 18px;
+      position: relative;
+    }
+
+    .pipe-map .packet {
+      position: absolute;
+      top: -14px;
+      left: 0;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--app);
+      box-shadow: 0 0 20px rgba(86, 211, 100, 0.9);
+      animation: packetRun 7s linear infinite;
+      z-index: 3;
+    }
+
+    .pipe-node {
+      min-height: 118px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-top: 4px solid var(--accent, var(--api));
+      border-radius: 8px;
+      background: rgba(21, 27, 35, 0.94);
+      position: relative;
+      animation: nodePulse 7s linear infinite;
+      min-width: 0;
+    }
+
+    .pipe-node:nth-of-type(2) { animation-delay: 1.1s; }
+    .pipe-node:nth-of-type(3) { animation-delay: 2.2s; }
+    .pipe-node:nth-of-type(4) { animation-delay: 3.3s; }
+    .pipe-node:nth-of-type(5) { animation-delay: 4.4s; }
+    .pipe-node:nth-of-type(6) { animation-delay: 5.5s; }
+
+    .pipe-node:not(:last-child):after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: -18px;
+      width: 24px;
+      height: 2px;
+      background: var(--line);
+    }
+
+    .pipe-node:not(:last-child):before {
+      content: "";
+      position: absolute;
+      top: calc(50% - 5px);
+      right: -20px;
+      width: 10px;
+      height: 10px;
+      border-top: 2px solid var(--line);
+      border-right: 2px solid var(--line);
+      transform: rotate(45deg);
+      z-index: 2;
+    }
+
+    .node-title {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text);
+      font-weight: 900;
+    }
+
+    .node-sub {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .decision-tree {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .decision-card {
+      min-height: 178px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(21, 27, 35, 0.94);
+      position: relative;
+    }
+
+    .decision-card:before {
+      content: "?";
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #08111f;
+      background: var(--accent, var(--api));
+      font-weight: 900;
+    }
+
+    .mini-path {
+      display: inline-flex;
+      margin-top: 8px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #080c12;
+      color: var(--text);
+      font-family: Consolas, Monaco, monospace;
+      font-size: 0.86rem;
+    }
+
+    .decision-card {
+      animation: cardFloat 6s ease-in-out infinite;
+    }
+
+    .decision-card:nth-child(2),
+    .decision-card:nth-child(5) {
+      animation-delay: 0.5s;
+    }
+
+    .decision-card:nth-child(3),
+    .decision-card:nth-child(6) {
+      animation-delay: 1s;
+    }
+
+    .feature-board {
+      display: grid;
+      gap: 18px;
+      margin-top: 20px;
+    }
+
+    .feature-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(21, 27, 35, 0.94);
+      overflow: hidden;
+      box-shadow: 0 16px 38px var(--shadow);
+    }
+
+    .feature-head {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 16px;
+      align-items: center;
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-2);
+    }
+
+    .feature-head > div {
+      min-width: 0;
+    }
+
+    .feature-badge {
+      width: 72px;
+      height: 72px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      color: #08111f;
+      background: var(--accent, var(--api));
+      font-weight: 900;
+      font-size: 1.35rem;
+      animation: iconPulse 2.8s ease-in-out infinite;
+    }
+
+    .feature-body {
+      display: grid;
+      grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+      gap: 18px;
+      padding: 18px;
+    }
+
+    .feature-body > div {
+      min-width: 0;
+    }
+
+    .feature-flow {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: feature-step;
+    }
+
+    .feature-flow li {
+      counter-increment: feature-step;
+      min-height: 58px;
+      padding: 12px 12px 12px 52px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #0a0f16;
+      color: var(--muted);
+      position: relative;
+      overflow-wrap: break-word;
+    }
+
+    .feature-flow li:before {
+      content: counter(feature-step);
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #08111f;
+      background: var(--accent, var(--api));
+      font-weight: 900;
+    }
+
+    .feature-flow li:not(:last-child):after {
+      content: "";
+      position: absolute;
+      left: 25px;
+      bottom: -12px;
+      width: 2px;
+      height: 12px;
+      background: var(--line);
+    }
+
+    .feature-map {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .feature-map span {
+      min-height: 74px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-top: 4px solid var(--accent, var(--api));
+      border-radius: 8px;
+      background: rgba(10, 15, 22, 0.78);
+      color: var(--muted);
+      font-size: 0.9rem;
+      min-width: 0;
+      overflow-wrap: break-word;
+    }
+
+    .feature-map strong {
+      display: block;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    @keyframes zoneGlow {
+      0%, 100% {
+        box-shadow: inset 0 0 0 rgba(255, 255, 255, 0), 0 16px 38px var(--shadow);
+        transform: translateY(0);
+      }
+      45% {
+        box-shadow: inset 0 0 26px rgba(255, 255, 255, 0.045), 0 22px 48px var(--shadow);
+        transform: translateY(-3px);
+      }
+    }
+
+    @keyframes iconPulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.06);
+      }
+    }
+
+    @keyframes packetRun {
+      0% {
+        transform: translateX(0);
+        background: var(--api);
+      }
+      34% {
+        background: var(--app);
+      }
+      68% {
+        background: var(--domain);
+      }
+      100% {
+        transform: translateX(calc(min(1180px, 100vw) - 86px));
+        background: var(--infra);
+      }
+    }
+
+    @keyframes nodePulse {
+      0%, 100% {
+        border-color: var(--line);
+      }
+      14% {
+        border-color: var(--accent, var(--api));
+        box-shadow: 0 0 26px rgba(88, 166, 255, 0.16);
+      }
+      28% {
+        border-color: var(--line);
+      }
+    }
+
+    @keyframes uploadRun {
+      0% {
+        transform: translateX(0) scale(0.85);
+        opacity: 0;
+      }
+      12% {
+        opacity: 1;
+      }
+      85% {
+        opacity: 1;
+      }
+      100% {
+        transform: translateX(calc(min(1180px, 100vw) - 180px)) scale(1.15);
+        opacity: 0;
+      }
+    }
+
+    @keyframes cardFloat {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-3px);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *:before,
+      *:after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    .warning {
+      border-color: rgba(242, 204, 96, 0.45);
+      background: rgba(242, 204, 96, 0.08);
+    }
+
+    footer {
+      padding: 26px 0 42px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 980px) {
+      .hero,
+      .grid,
+      .levels,
+      .flow,
+      .world-map,
+       .pipe-map,
+       .decision-tree,
+      .feature-body,
+      .feature-map {
+        grid-template-columns: 1fr;
+      }
+
+       .pipe-node:not(:last-child):before,
+       .pipe-node:not(:last-child):after {
+        display: none;
+      }
+
+      header {
+        min-height: auto;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .shell {
+        width: min(100% - 22px, 1180px);
+      }
+
+      .arena-row {
+        grid-template-columns: 1fr;
+      }
+
+      .arena-label {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell hero">
+      <div>
+        <p class="eyebrow">ServiceLifeOS Architecture Guide</p>
+        <h1>Guia visual da arquitetura do backend</h1>
+        <p class="lead">
+          Este guia mostra como as camadas do projeto se organizam. Cada pasta tem uma responsabilidade clara:
+          a API recebe requisições, a Application coordena os casos de uso, o Domain guarda regras puras e a Infrastructure conversa com serviços externos.
+        </p>
+      </div>
+
+      <aside class="hud" aria-label="Resumo da build">
+        <div class="hud-title">
+          <span>Resumo da arquitetura</span>
+          <span>Clean Architecture</span>
+        </div>
+        <div class="hud-body">
+          <div class="stat">
+            <span>API</span>
+            <div class="bar"><span style="width: 82%"></span></div>
+          </div>
+          <div class="stat">
+            <span>Use Cases</span>
+            <div class="bar"><span style="width: 92%"></span></div>
+          </div>
+          <div class="stat">
+            <span>Domain</span>
+            <div class="bar"><span style="width: 88%"></span></div>
+          </div>
+          <div class="stat">
+            <span>Adapters</span>
+            <div class="bar"><span style="width: 86%"></span></div>
+          </div>
+          <p>
+            Objetivo: manter cada responsabilidade no lugar certo para o código continuar fácil de evoluir.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </header>
+
+  <nav>
+    <div class="shell nav-inner">
+      <a href="#regra">Regra Central</a>
+      <a href="#desenhos">Desenhos</a>
+      <a href="#camadas">Camadas</a>
+      <a href="#pastas">Pastas</a>
+      <a href="#fluxos">Fluxos</a>
+      <a href="#missoes">Onde Codar</a>
+      <a href="#feature-run">Funcionalidade Nova</a>
+      <a href="#cuidados">Cuidados</a>
+    </div>
+  </nav>
+
+  <main class="shell">
+    <section id="regra">
+      <h2>Regra Central</h2>
+      <p>
+        A arquitetura segue uma ideia de ports and adapters. O centro da aplicação não conhece os detalhes externos.
+         O Domain não sabe que existe HTTP, banco, JWT ou Swagger. A Application sabe o que precisa fazer, mas fala com interfaces.
+        A Infrastructure equipa essas interfaces com tecnologias reais.
+      </p>
+      <div class="codebox">Api -> Application -> Domain
+Infrastructure -> Application + Domain</div>
+      <div class="panel warning">
+        <h3>Regra de ouro</h3>
+        <p>
+          Se uma decisão é regra de negócio ou fluxo de aplicação, ela fica em <code>Domain</code> ou <code>Application</code>.
+           Se uma decisão é detalhe de ferramenta, como PostgreSQL, JWT ou EF Core, ela fica em <code>Infrastructure</code>.
+        </p>
+      </div>
+    </section>
+
+    <section id="desenhos">
+      <h2>Diagramas da Arquitetura</h2>
+      <p>
+        A leitura geral fica assim: a requisição entra pela API, passa pela Application, consulta o Domain quando precisa de regras
+        e usa a Infrastructure para acessar banco, storage, autenticação e outros serviços externos.
+      </p>
+
+      <div class="visual-stage" aria-label="Diagrama visual das camadas">
+        <div class="world-map">
+          <article class="map-zone api">
+            <div class="zone-icon">A</div>
+            <h3>Entrada HTTP</h3>
+            <p><code>ServiceLifeOS.Api</code> recebe comandos do mundo externo: rotas, headers, token, tenant e Swagger.</p>
+          </article>
+
+          <article class="map-zone app">
+            <div class="zone-icon">S</div>
+            <h3>Casos de Uso</h3>
+             <p><code>Application</code> coordena fluxos como login, CRUD, transação e DTOs.</p>
+          </article>
+
+          <article class="map-zone domain">
+            <div class="zone-icon">R</div>
+            <h3>Regras Puras</h3>
+             <p><code>Domain</code> guarda entidades e regras puras. Ele não sabe que banco ou HTTP existem.</p>
+          </article>
+
+          <article class="map-zone infra">
+            <div class="zone-icon">E</div>
+            <h3>Adapters Externos</h3>
+             <p><code>Infrastructure</code> usa PostgreSQL, EF Core, JWT e hash de senha para cumprir os ports.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="visual-stage" aria-label="Diagrama do caminho de uma requisição">
+        <h3>Caminho de uma requisição</h3>
+        <p>
+          Cada bloco passa só a informação necessária para o próximo. O objetivo é não deixar uma camada fazer o trabalho da outra.
+        </p>
+        <div class="pipe-map">
+          <span class="packet" aria-hidden="true"></span>
+          <div class="pipe-node api">
+            <span class="node-title">Cliente</span>
+            <span class="node-sub">Faz HTTP com token e tenant.</span>
+          </div>
+          <div class="pipe-node api">
+            <span class="node-title">Controller</span>
+            <span class="node-sub">Converte requisição em chamada de service.</span>
+          </div>
+          <div class="pipe-node app">
+            <span class="node-title">Service</span>
+            <span class="node-sub">Orquestra o caso de uso e usa ports.</span>
+          </div>
+          <div class="pipe-node domain">
+            <span class="node-title">Domain</span>
+            <span class="node-sub">Entidades e regras puras.</span>
+          </div>
+          <div class="pipe-node infra">
+            <span class="node-title">Adapter</span>
+             <span class="node-sub">EF Core, JWT ou hash.</span>
+          </div>
+          <div class="pipe-node app">
+            <span class="node-title">DTO</span>
+            <span class="node-sub">Resposta volta limpa para a API.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="visual-stage" aria-label="Árvore de decisão de pastas">
+        <h3>Árvore rápida: onde coloco esse código?</h3>
+        <div class="decision-tree">
+          <article class="decision-card api">
+            <h3>Tem rota, header ou HTTP?</h3>
+            <p>Coloque na camada de entrada. Controller, middleware, adapter de usuário atual ou OpenAPI.</p>
+            <span class="mini-path">ServiceLifeOS.Api</span>
+          </article>
+          <article class="decision-card app">
+            <h3>Executa um caso de uso?</h3>
+            <p>Coloque no service de Application. Ele chama ports e decide o fluxo do caso de uso.</p>
+            <span class="mini-path">Application/Services</span>
+          </article>
+          <article class="decision-card domain">
+            <h3>É regra pura?</h3>
+            <p>Coloque no Domain. Ela deve funcionar sem banco, sem web e sem SDK externo.</p>
+            <span class="mini-path">Domain</span>
+          </article>
+          <article class="decision-card infra">
+            <h3>Conversa com ferramenta?</h3>
+            <p>Coloque na Infrastructure. Banco, storage, token, hash, fila, cache e API externa moram aqui.</p>
+            <span class="mini-path">Infrastructure</span>
+          </article>
+          <article class="decision-card app">
+            <h3>Precisa de contrato?</h3>
+            <p>Crie uma interface em Ports. A Application depende do contrato; a Infrastructure fornece a implementação real.</p>
+            <span class="mini-path">Application/Ports</span>
+          </article>
+          <article class="decision-card infra">
+            <h3>Mudou tabela?</h3>
+            <p>Entidade no Domain, configuração EF na Infrastructure e migration no projeto Infrastructure.</p>
+            <span class="mini-path">Infrastructure/Migrations</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="camadas">
+      <h2>As Quatro Camadas Principais</h2>
+      <p>
+        Uma requisição entra pela API, passa pelo caso de uso na Application, usa regras do Domain quando necessário
+        e acessa recursos externos pela Infrastructure.
+      </p>
+
+      <div class="levels">
+        <article class="level api">
+          <span class="tag">Camada 1</span>
+          <h3>ServiceLifeOS.Api</h3>
+          <p>Entrada HTTP. Recebe requisições, autentica, resolve tenant, chama casos de uso e devolve respostas.</p>
+        </article>
+
+        <article class="level app">
+          <span class="tag">Camada 2</span>
+          <h3>ServiceLifeOS.Application</h3>
+          <p>Casos de uso. Orquestra fluxos, usa ports, DTOs e services, mas não conhece EF Core nem ASP.NET.</p>
+        </article>
+
+        <article class="level domain">
+          <span class="tag">Camada 3</span>
+          <h3>ServiceLifeOS.Domain</h3>
+          <p>Modelo de domínio. Entidades e regras puras vivem aqui, sem dependência de banco, web ou storage.</p>
+        </article>
+
+        <article class="level infra">
+          <span class="tag">Camada 4</span>
+          <h3>ServiceLifeOS.Infrastructure</h3>
+           <p>Implementações externas. Implementa banco, JWT, hash de senha, migrations e repositórios EF.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="pastas">
+      <h2>O Que Cada Pasta Resolve</h2>
+      <p>
+        Use esta referência para decidir onde colocar código novo. Pense sempre: isto é entrada, caso de uso, regra ou integração externa?
+      </p>
+
+      <div class="grid">
+        <article class="panel api">
+          <h3><code>src/ServiceLifeOS.Api</code></h3>
+          <p><strong>Função:</strong> adaptar HTTP para os casos de uso internos.</p>
+          <ul class="list">
+             <li><code>Controllers</code>: recebem requisições como <code>/auth/login</code> e <code>/examples</code>.</li>
+            <li><code>Middleware</code>: resolve e valida tenant antes da requisição entrar no caso de uso.</li>
+            <li><code>Adapters</code>: transforma contexto HTTP em interfaces como <code>ICurrentUser</code> e <code>ICurrentTenant</code>.</li>
+            <li><code>OpenApi</code>: ajusta Swagger, headers e documentação da API.</li>
+            <li><code>Program.cs</code>: inicializa a aplicação, registra DI, auth, CORS, migrations e controllers.</li>
+          </ul>
+        </article>
+
+        <article class="panel app">
+          <h3><code>src/ServiceLifeOS.Application</code></h3>
+          <p><strong>Função:</strong> executar missões de negócio sem depender de tecnologia externa.</p>
+          <ul class="list">
+             <li><code>Services</code>: casos de uso. Exemplo: criar item e login.</li>
+             <li><code>Ports</code>: contratos que a Application precisa. Exemplo: repositório, token e hash.</li>
+            <li><code>Dtos</code>: formato de entrada e saída dos casos de uso.</li>
+            <li><code>Options</code>: configurações que pertencem ao comportamento da aplicação.</li>
+            <li><code>DependencyInjection.cs</code>: registra services da Application.</li>
+          </ul>
+        </article>
+
+        <article class="panel domain">
+          <h3><code>src/ServiceLifeOS.Domain</code></h3>
+           <p><strong>Função:</strong> guardar as coisas que seriam verdade mesmo sem web ou banco.</p>
+          <ul class="list">
+             <li><code>Entities</code>: modelos centrais como <code>ExampleItem</code>, <code>AppUser</code> e <code>UserTenantAccess</code>.</li>
+            <li><code>Services</code>: regras puras, como limites de nome e descrição.</li>
+             <li>Não coloque EF Core, Controller, JWT ou configuração de HTTP aqui.</li>
+            <li>Se você pudesse testar com um <code>new</code> simples, provavelmente pode morar no Domain.</li>
+          </ul>
+        </article>
+
+        <article class="panel infra">
+          <h3><code>src/ServiceLifeOS.Infrastructure</code></h3>
+          <p><strong>Função:</strong> conversar com o mundo real usando ferramentas concretas.</p>
+          <ul class="list">
+            <li><code>Persistence</code>: <code>AppDbContext</code>, configurações EF, seed e repositórios.</li>
+             <li><code>Identity</code>: JWT e hash PBKDF2.</li>
+             <li><code>Options</code>: configurações de JWT.</li>
+            <li><code>Migrations</code>: histórico de evolução do schema do PostgreSQL.</li>
+          </ul>
+        </article>
+      </div>
+
+      <div class="arena">
+        <div class="arena-row">
+          <div class="arena-label">tests</div>
+          <div class="arena-content">
+            A área de treino. Testa regras de Domain e garante que as camadas não ganharam dependências proibidas.
+          </div>
+        </div>
+        <div class="arena-row">
+          <div class="arena-label">docs</div>
+          <div class="arena-content">
+            Documentação técnica. Explica decisões, diagramas e convenções para você voltar depois e lembrar por que algo existe.
+          </div>
+        </div>
+        <div class="arena-row">
+          <div class="arena-label">docker-compose</div>
+          <div class="arena-content">
+             Ambiente local. Sobe o PostgreSQL para desenvolvimento.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="fluxos">
+      <h2>Como as Pastas se Combinam</h2>
+      <p>
+        Aqui estão os caminhos mais importantes. Eles mostram como uma ação passa pelas camadas sem quebrar a regra das dependências.
+      </p>
+
+      <h3>Fluxo: criar um item</h3>
+      <div class="flow">
+        <article class="flow-step api">
+          <div class="num">1. API</div>
+          <p><code>ExamplesController</code> recebe o JSON e chama <code>ExampleItemService</code>.</p>
+        </article>
+        <article class="flow-step app">
+          <div class="num">2. Application</div>
+          <p>O service valida o caso de uso, usa <code>ICurrentTenant</code> e prepara a entidade.</p>
+        </article>
+        <article class="flow-step domain">
+          <div class="num">3. Domain</div>
+          <p><code>ExampleItem</code> representa a entidade e regras puras limitam campos.</p>
+        </article>
+        <article class="flow-step infra">
+          <div class="num">4. Infrastructure</div>
+          <p><code>ExampleItemRepository</code> salva no PostgreSQL via EF Core.</p>
+        </article>
+        <article class="flow-step app">
+          <div class="num">5. Retorno</div>
+          <p>O service devolve DTO para a API responder HTTP.</p>
+        </article>
+      </div>
+
+    </section>
+
+    <section id="missoes">
+      <h2>Onde Eu Devo Fazer Cada Coisa?</h2>
+      <p>
+        Use esta tabela como referência. Antes de criar arquivo novo, procure qual tipo de alteração combina com sua necessidade.
+      </p>
+
+      <div class="arena">
+        <div class="arena-row">
+          <div class="arena-label">Nova rota HTTP</div>
+          <div class="arena-content">
+            Crie ou altere um controller em <code>ServiceLifeOS.Api/Api/Controllers</code>.
+            O controller deve ser fino: receber, chamar Application e devolver resposta.
+          </div>
+        </div>
+        <div class="arena-row">
+          <div class="arena-label">Novo caso de uso</div>
+          <div class="arena-content">
+            Crie um service em <code>ServiceLifeOS.Application/Application/Services</code>.
+             Exemplo: <code>InvoiceService</code> e <code>AuthService</code>.
+          </div>
+        </div>
+        <div class="arena-row">
+          <div class="arena-label">Nova regra pura</div>
+          <div class="arena-content">
+            Coloque no <code>ServiceLifeOS.Domain</code>. Se a regra não precisa de banco, requisição HTTP ou SDK externo, ela pertence ao domínio.
+          </div>
+        </div>
+        <div class="arena-row">
+          <div class="arena-label">Novo acesso a banco</div>
+          <div class="arena-content">
+            Primeiro crie uma interface em <code>Application/Ports</code>. Depois implemente em <code>Infrastructure/Persistence/Repositories</code>.
+          </div>
+        </div>
+        <div class="arena-row">
+          <div class="arena-label">Nova tabela</div>
+          <div class="arena-content">
+            Crie a entidade no <code>Domain</code>, configure EF em <code>Infrastructure/Persistence/Configurations</code>, adicione <code>DbSet</code> no <code>AppDbContext</code> e gere migration.
+          </div>
+        </div>
+        <div class="arena-row">
+          <div class="arena-label">Novo adapter externo</div>
+          <div class="arena-content">
+             Email, fila, cache, JWT, hash ou API externa entram em <code>Infrastructure</code>. A Application só deve enxergar uma interface.
+          </div>
+        </div>
+      </div>
+
+      <div class="codebox">Exemplo de funcionalidade: "quero adicionar notificações por email"
+
+1. Application/Ports: criar IEmailSender
+2. Application/Services: chamar IEmailSender no caso de uso certo
+3. Infrastructure: implementar SmtpEmailSender ou SendGridEmailSender
+4. Infrastructure/DependencyInjection.cs: registrar IEmailSender
+5. Api: se precisar, criar endpoint que dispara o caso de uso
+6. Tests: testar regra e dependência de camadas</div>
+    </section>
+
+    <section id="feature-run">
+      <h2>Como Criar Uma Funcionalidade Nova</h2>
+      <p>
+        Comece identificando se a integração externa já existe na Infrastructure. Se existir, reutilize o port disponível.
+        Se não existir, crie o port na Application e implemente o adapter correspondente na Infrastructure.
+      </p>
+
+      <div class="feature-board">
+        <article class="feature-card infra">
+          <div class="feature-head">
+            <div class="feature-badge">1</div>
+            <div>
+              <h3>Exemplo B: endpoint novo quando o adapter ainda não existe</h3>
+              <p>
+                Objetivo: criar <code>POST /videos</code> que dispara um transcodificador externo para gerar versões menores.
+              </p>
+            </div>
+          </div>
+
+          <div class="feature-body">
+            <div>
+              <h3>Payload de entrada</h3>
+              <div class="codebox">POST /videos
+
+{
+  "title": "aula-01"
+}</div>
+              <p>
+                Não existe um port como <code>IVideoTranscoder</code>. Esse contrato precisa ser criado.
+              </p>
+            </div>
+
+            <div>
+              <h3>Caminho da implementação</h3>
+              <ol class="feature-flow infra">
+                <li><strong>Domain:</strong> crie a entidade que representa o vídeo, por exemplo <code>VideoAsset</code>, com <code>TenantId</code>.</li>
+                <li><strong>Application/Ports:</strong> crie <code>IVideoTranscoder</code> com o contrato necessário, sem citar SDK externo.</li>
+                <li><strong>Application/Services:</strong> crie <code>VideoService</code>; ele agenda ou transmite a transcodificação.</li>
+                <li><strong>Dtos:</strong> crie payload e response em <code>Application/Dtos/Videos</code>.</li>
+                <li><strong>Infrastructure:</strong> implemente <code>IVideoTranscoder</code>, por exemplo <code>CloudVideoTranscoder</code> ou <code>FfmpegVideoTranscoder</code>.</li>
+                <li><strong>DependencyInjection:</strong> registre <code>IVideoTranscoder</code> apontando para o adapter real.</li>
+                <li><strong>Persistence:</strong> crie repository/configuration/migration se o vídeo tiver tabela própria.</li>
+                <li><strong>Api:</strong> crie <code>VideosController</code> chamando só o <code>VideoService</code>.</li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="feature-body">
+            <div>
+              <h3>Resumo visual</h3>
+              <div class="feature-map">
+                <span><strong>Controller</strong> POST /videos</span>
+                <span><strong>Service</strong> orquestra</span>
+                <span><strong>Port novo</strong> IVideoTranscoder</span>
+                <span><strong>Adapter novo</strong> Infrastructure</span>
+              </div>
+            </div>
+            <div>
+              <h3>Regra mental</h3>
+              <p>
+                Quando a ferramenta ainda não existe, não coloque o SDK externo dentro da Application. Primeiro defina o contrato
+                que você quer usar: o port. Depois construa a implementação real na Infrastructure.
+              </p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="cuidados">
+      <h2>Cuidados de Arquitetura</h2>
+      <div class="grid">
+        <article class="panel warning">
+          <h3>Não coloque regra pesada no Controller</h3>
+          <p>
+            Controller é uma camada de entrada. Ele não deve decidir a estratégia inteira do caso de uso.
+            Se tiver if de regra de negocio, provavelmente pertence a Application ou Domain.
+          </p>
+        </article>
+
+        <article class="panel warning">
+          <h3>Não deixe o Domain conhecer ferramentas</h3>
+          <p>
+             Se aparecer <code>DbContext</code>, <code>HttpContext</code> ou <code>Jwt</code> no Domain,
+            a regra de dependência entre camadas foi quebrada.
+          </p>
+        </article>
+
+        <article class="panel warning">
+          <h3>Use ports para respeitar limites entre camadas</h3>
+          <p>
+            Application fala com interfaces. Infrastructure implementa. Assim você consegue trocar ferramenta sem reescrever a aplicação inteira.
+          </p>
+        </article>
+
+        <article class="panel warning">
+          <h3>Tenant é chave de segurança</h3>
+          <p>
+            Dados tenant-aware precisam ter <code>TenantId</code>, filtro global quando aplicável, e paths de storage com
+            <code>tenants/{tenantId}/</code>.
+          </p>
+        </article>
+      </div>
+
+      <h3 style="margin-top: 28px;">Checklist antes de commitar uma feature</h3>
+      <div class="codebox">[ ] A API só adapta HTTP?
+[ ] A Application orquestra sem depender de ASP.NET ou EF Core?
+[ ] O Domain continua puro?
+[ ] A Infrastructure implementa os ports?
+[ ] Entidade tenant-aware tem TenantId e filtro/consulta segura?
+[ ] Migration foi gerada e aplicada?
+[ ] Build e testes passam?</div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell">
+      ServiceLifeOS - guia visual de arquitetura. Use este material quando for escolher onde criar a próxima classe.
+    </div>
+  </footer>
+</body>
+</html>
