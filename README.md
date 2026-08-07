@@ -1,12 +1,13 @@
 # ServiceLifeOS
 
-API do ServiceLifeOS, um sistema pessoal para financas, habitos, treinos, metas e gamificacao.
+API do LifeOS, um sistema pessoal para financas, habitos, treinos, metas e gamificacao.
 
 ## Documentacao
 
 - `docs/requirements.md`: escopo e regras de negocio do MVP.
 - `docs/entities.md`: entidades, relacionamentos, convencoes e dados iniciais.
 - `docs/architecture.md`: camadas e dependencias da aplicacao.
+- `docs/production.md`: configuracao de Render, Supabase e migrations.
 
 ## Tecnologias
 
@@ -31,6 +32,8 @@ docs/                             Documentacao do produto e do modelo
 A migration inicial cria o modelo completo do MVP, sem tabelas de exemplo ou tenant. As novas entidades usam UUIDs gerados pela aplicacao e pertencem ao usuario por `UserId`.
 
 No startup, o inicializador cria dados padrao ausentes para o usuario provisionado: preferencias, categorias financeiras, regras de XP, progressao de nivel e badges. O processo e idempotente e nao substitui configuracoes existentes.
+
+Em producao, migrations sao executadas manualmente antes do deploy. Consulte `docs/production.md`.
 
 ## Verificacao
 

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using ServiceLifeOS.Application.Ports;
 using ServiceLifeOS.Application.Services;
 using ServiceLifeOS.Dtos.Auth;
@@ -22,6 +23,7 @@ public sealed class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting("login")]
     public async Task<ActionResult<AuthResponseDto>> Login(
         LoginRequestDto request,
         CancellationToken cancellationToken)

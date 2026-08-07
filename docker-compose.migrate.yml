@@ -1,0 +1,7 @@
+services:
+  migrations:
+    build:
+      context: .
+      target: migrations
+    env_file:
+      - ${ENV_FILE:-.env}

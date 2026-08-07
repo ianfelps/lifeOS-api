@@ -9,23 +9,23 @@ public static class DbSeeder
 {
     public static async Task SeedAsync(
         AppDbContext db,
-        DemoUserOptions demoUser,
+        BootstrapUserOptions bootstrapUser,
         IPasswordHasher passwordHasher,
         CancellationToken cancellationToken = default)
     {
         var now = DateTime.UtcNow;
         var user = await db.Users.FirstOrDefaultAsync(
-            x => x.Id == demoUser.UserId,
+            x => x.Id == bootstrapUser.UserId,
             cancellationToken);
 
         if (user is null)
         {
             db.Users.Add(new AppUser
             {
-                Id = demoUser.UserId.Trim(),
-                UserName = demoUser.UserName.Trim(),
-                DisplayName = demoUser.DisplayName.Trim(),
-                PasswordHash = passwordHasher.HashPassword(demoUser.Password),
+                Id = bootstrapUser.UserId.Trim(),
+                UserName = bootstrapUser.UserName.Trim(),
+                DisplayName = bootstrapUser.DisplayName.Trim(),
+                PasswordHash = passwordHasher.HashPassword(bootstrapUser.Password),
                 Active = true,
                 CreatedAt = now,
                 UpdatedAt = now
@@ -33,18 +33,18 @@ public static class DbSeeder
         }
         else
         {
-            user.UserName = demoUser.UserName.Trim();
-            user.DisplayName = demoUser.DisplayName.Trim();
+            user.UserName = bootstrapUser.UserName.Trim();
+            user.DisplayName = bootstrapUser.DisplayName.Trim();
             user.Active = true;
             user.UpdatedAt = now;
 
             if (string.IsNullOrWhiteSpace(user.PasswordHash))
             {
-                user.PasswordHash = passwordHasher.HashPassword(demoUser.Password);
+                user.PasswordHash = passwordHasher.HashPassword(bootstrapUser.Password);
             }
         }
 
-        await SeedDefaultsAsync(db, demoUser.UserId, now, cancellationToken);
+        await SeedDefaultsAsync(db, bootstrapUser.UserId, now, cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
     }

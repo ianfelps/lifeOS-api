@@ -1,6 +1,6 @@
 namespace ServiceLifeOS.Application.Options;
 
-public sealed class DemoUserOptions
+public sealed class BootstrapUserOptions
 {
     public string UserId { get; set; } = "demo-user";
 
