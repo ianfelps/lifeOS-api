@@ -215,6 +215,26 @@ app.Use(async (context, next) =>
     await next(context);
 });
 
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next(context);
+    }
+    catch (ArgumentException exception)
+    {
+        await WriteErrorAsync(context, StatusCodes.Status400BadRequest, exception.Message);
+    }
+    catch (KeyNotFoundException exception)
+    {
+        await WriteErrorAsync(context, StatusCodes.Status404NotFound, exception.Message);
+    }
+    catch (InvalidOperationException exception)
+    {
+        await WriteErrorAsync(context, StatusCodes.Status409Conflict, exception.Message);
+    }
+});
+
 app.UseCors("DefaultCors");
 
 app.UseAuthentication();
@@ -238,3 +258,9 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
+static Task WriteErrorAsync(HttpContext context, int statusCode, string message)
+{
+    context.Response.StatusCode = statusCode;
+    return context.Response.WriteAsJsonAsync(new { message });
+}
