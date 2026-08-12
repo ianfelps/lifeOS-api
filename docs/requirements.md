@@ -67,6 +67,12 @@ O produto sera disponibilizado como aplicacao web responsiva, com abordagem mobi
 - Ao registrar uma compra parcelada, cada parcela deve estar visivel no mes correspondente e nao deve concentrar o valor total no primeiro mes.
 - Os alertas devem refletir os limites de 80%, 100% e acima de 100% do teto aplicavel ao mes.
 
+**Regras operacionais da API:**
+
+- Lancamentos vencidos permanecem persistidos como planejados. A API os retorna como `Overdue` quando a data ja passou no fuso `America/Sao_Paulo`.
+- A edicao de uma compra parcelada preserva parcelas confirmadas e substitui somente parcelas futuras nao confirmadas. O novo total e a nova quantidade nao podem ser inferiores ao valor ou numero de parcelas confirmadas.
+- A confirmacao de transacoes gera a concessao de XP configurada para `TransactionConfirmed`; desconfirmacao ou exclusao gera uma reversao correspondente no ledger.
+
 ### 5.3 Habitos
 
 - **RF18:** O sistema deve permitir criar, editar, pausar, retomar, arquivar e excluir habitos.

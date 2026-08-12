@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ServiceLifeOS.Application\ServiceLifeOS.Application.csproj" />
+    <ProjectReference Include="..\..\src\ServiceLifeOS.Api\ServiceLifeOS.Api.csproj" />
     <ProjectReference Include="..\..\src\ServiceLifeOS.Domain\ServiceLifeOS.Domain.csproj" />
   </ItemGroup>
 
