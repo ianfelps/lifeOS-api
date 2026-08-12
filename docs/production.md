@@ -45,7 +45,7 @@ Esse comando usa o alvo `migrations` do `Dockerfile`, que contem o SDK e `dotnet
 ## Runtime
 
 - `GET /health` e publico e nao testa o banco; configure este caminho como health check da Render.
-- Swagger e OpenAPI UI ficam disponiveis apenas em desenvolvimento.
+- OpenAPI (`/openapi/v1.json`) e Scalar (`/scalar`) ficam disponiveis apenas em desenvolvimento.
 - CORS aceita somente as origens configuradas em `Cors__AllowedOrigins`.
 - Login aceita 10 requisicoes por IP a cada 15 minutos.
 - A API aceita 300 requisicoes por IP por minuto.

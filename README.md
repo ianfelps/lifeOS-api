@@ -35,6 +35,8 @@ No startup, o inicializador cria dados padrao ausentes para o usuario provisiona
 
 Em producao, migrations sao executadas manualmente antes do deploy. Consulte `docs/production.md`.
 
+Em desenvolvimento, migrations pendentes sao aplicadas automaticamente no startup da API antes da criacao dos dados iniciais.
+
 ## Verificacao
 
 ```bash

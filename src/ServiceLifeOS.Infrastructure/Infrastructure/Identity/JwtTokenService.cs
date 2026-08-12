@@ -17,13 +17,15 @@ public sealed class JwtTokenService : ITokenService
         _options = options.Value;
     }
 
-    public string CreateAccessToken(string userId, string userName, string displayName)
+    public AccessTokenData CreateAccessToken(string userId, string userName, string displayName)
     {
+        var tokenId = Guid.NewGuid().ToString("N");
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, userId),
             new(JwtRegisteredClaimNames.Name, displayName),
-            new("username", userName)
+            new("username", userName),
+            new(JwtRegisteredClaimNames.Jti, tokenId)
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret));
@@ -37,6 +39,11 @@ public sealed class JwtTokenService : ITokenService
             expires: expires,
             signingCredentials: credentials);
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        return new()
+        {
+            Value = new JwtSecurityTokenHandler().WriteToken(token),
+            TokenId = tokenId,
+            ExpiresAt = expires
+        };
     }
 }

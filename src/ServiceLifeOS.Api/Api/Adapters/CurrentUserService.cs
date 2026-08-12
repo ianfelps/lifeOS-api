@@ -20,6 +20,10 @@ public sealed class CurrentUserService : ICurrentUser
         _httpContextAccessor.HttpContext?.User.FindFirstValue("name") ??
         string.Empty;
 
+    public string TokenId =>
+        _httpContextAccessor.HttpContext?.User.FindFirstValue("jti")?.Trim() ??
+        throw new UnauthorizedAccessException("Session token was not found.");
+
     private string? ResolveUserId()
     {
         var user = _httpContextAccessor.HttpContext?.User;

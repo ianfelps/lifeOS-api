@@ -1,10 +1,13 @@
 using System.Text;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi;
 using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 using System.Threading.RateLimiting;
 using ServiceLifeOS.Api.Adapters;
 using ServiceLifeOS.Application;
@@ -88,6 +91,29 @@ builder.Services
             ClockSkew = TimeSpan.Zero,
             NameClaimType = "username"
         };
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var userId = context.Principal?.FindFirstValue(JwtRegisteredClaimNames.Sub)?.Trim();
+                var tokenId = context.Principal?.FindFirstValue(JwtRegisteredClaimNames.Jti)?.Trim();
+                if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(tokenId))
+                {
+                    context.Fail("Session token was not found.");
+                    return;
+                }
+
+                var sessions = context.HttpContext.RequestServices.GetRequiredService<IUserSessionRepository>();
+                var now = DateTime.UtcNow;
+                if (!await sessions.IsActiveAsync(userId, tokenId, now, context.HttpContext.RequestAborted))
+                {
+                    context.Fail("Session is no longer active.");
+                    return;
+                }
+
+                await sessions.TouchAsync(tokenId, now, context.HttpContext.RequestAborted);
+            }
+        };
     });
 
 builder.Services.AddAuthorization();
@@ -139,34 +165,34 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
 builder.Services.AddHealthChecks();
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
+builder.Services.AddOpenApi(options =>
 {
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    options.AddDocumentTransformer((document, _, _) =>
     {
-        Name = "Authorization",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        Description = "Informe apenas o accessToken retornado por /auth/login."
+        document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+        document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            Description = "Informe apenas o accessToken retornado por /auth/login."
+        };
+        document.Security ??= [];
+        document.Security.Add(new OpenApiSecurityRequirement
+        {
+            [new OpenApiSecuritySchemeReference("Bearer", document, null)] = []
+        });
+        return Task.CompletedTask;
     });
-
-    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
-    {
-        [
-            new OpenApiSecuritySchemeReference("Bearer", document, null)
-        ] = []
-    });
-
 });
 
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.MapOpenApi();
+    app.MapScalarApiReference("/scalar");
 }
 
 app.UseForwardedHeaders();
@@ -183,7 +209,9 @@ app.Use(async (context, next) =>
     context.Response.Headers["X-Content-Type-Options"] = "nosniff";
     context.Response.Headers["X-Frame-Options"] = "DENY";
     context.Response.Headers["Referrer-Policy"] = "no-referrer";
-    context.Response.Headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'";
+    context.Response.Headers["Content-Security-Policy"] = context.Request.Path.StartsWithSegments("/scalar")
+        ? "default-src 'self'; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"
+        : "default-src 'none'; frame-ancestors 'none'; base-uri 'none'";
     await next(context);
 });
 
@@ -200,6 +228,11 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+
+    if (app.Environment.IsDevelopment())
+    {
+        await db.Database.MigrateAsync();
+    }
 
     await DbSeeder.SeedAsync(db, bootstrapUserOptions, passwordHasher);
 }
