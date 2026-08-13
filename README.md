@@ -63,6 +63,7 @@ Toda rota, exceto `GET /health` e `POST /auth/login`, exige um token JWT Bearer 
 | Usuario | `/users/me/preferences`, `/users/me/password`, `/users/me/sessions/others` | `docs/users.md` |
 | Operacoes | `GET /operations/audit-logs` | Codigo e OpenAPI |
 | Financas | `/finances/categories`, `/finances/transactions`, `/finances/recurrences`, `/finances/installment-purchases`, `/finances/reports` | `docs/finances.md` |
+| Habitos | `/habits` | `docs/habits.md` |
 | Saude | `GET /health` | `docs/production.md` |
 
 Em desenvolvimento, a especificacao OpenAPI esta em `/openapi/v1.json` e a interface Scalar em `/scalar`.
@@ -93,6 +94,7 @@ Os testes cobrem dependencias entre camadas, regras de usuario e operacoes, regr
 - `docs/architecture.md`: camadas, dependencias e ports.
 - `docs/users.md`: contrato de perfil, preferencias, senha e sessoes.
 - `docs/finances.md`: contrato e regras operacionais de financas.
+- `docs/habits.md`: contrato e regras operacionais de habitos.
 - `docs/production.md`: operacao na Render, Supabase, variaveis e migrations.
 
 ## Seguranca e Operacao

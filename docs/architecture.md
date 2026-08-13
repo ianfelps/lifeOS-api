@@ -42,6 +42,7 @@ Implementa adapters de entrada:
 
 - `AuthController`
 - `FinancesController`
+- `HabitsController`
 
 Controllers convertem HTTP para chamadas de Application. Regras de negocio devem ficar em Domain/Application, nao nos controllers.
 
