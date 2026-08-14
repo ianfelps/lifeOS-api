@@ -4,135 +4,123 @@ using ServiceLifeOS.Domain.Entities;
 
 namespace ServiceLifeOS.Infrastructure.Persistence.Repositories;
 
-public sealed class FinanceRepository : IFinanceRepository
+public sealed class WorkoutRepository : IWorkoutRepository
 {
     private readonly AppDbContext _db;
-
-    public FinanceRepository(AppDbContext db)
+    public WorkoutRepository(AppDbContext db)
     {
         _db = db;
     }
 
-    public async Task<IReadOnlyCollection<FinancialCategory>> GetCategoriesAsync(
+    public Task<Exercise?> GetExerciseAsync(
         string userId,
-        bool includeArchived,
+        Guid exerciseId,
         CancellationToken cancellationToken = default)
     {
-        return await _db.FinancialCategories
-            .AsNoTracking()
-            .Where(x => x.UserId == userId && (includeArchived || !x.Archived))
-            .OrderBy(x => x.Type)
-            .ThenBy(x => x.Name)
-            .ToArrayAsync(cancellationToken);
-    }
-
-    public Task<FinancialCategory?> GetCategoryAsync(
-        string userId,
-        Guid categoryId,
-        CancellationToken cancellationToken = default)
-    {
-        return _db.FinancialCategories.FirstOrDefaultAsync(
-            x => x.UserId == userId && x.Id == categoryId,
+        return _db.Exercises.FirstOrDefaultAsync(
+            x => x.UserId == userId && x.Id == exerciseId,
             cancellationToken);
     }
 
-    public Task<FinancialTransaction?> GetTransactionAsync(
-        string userId,
-        Guid transactionId,
-        CancellationToken cancellationToken = default)
-    {
-        return _db.FinancialTransactions.FirstOrDefaultAsync(
-            x => x.UserId == userId && x.Id == transactionId && x.DeletedAt == null,
-            cancellationToken);
-    }
-
-    public Task<RecurringTransaction?> GetRecurringTransactionAsync(
-        string userId,
-        Guid recurringTransactionId,
-        CancellationToken cancellationToken = default)
-    {
-        return _db.RecurringTransactions.FirstOrDefaultAsync(
-            x => x.UserId == userId && x.Id == recurringTransactionId,
-            cancellationToken);
-    }
-
-    public Task<InstallmentPurchase?> GetInstallmentPurchaseAsync(
-        string userId,
-        Guid installmentPurchaseId,
-        CancellationToken cancellationToken = default)
-    {
-        return _db.InstallmentPurchases.FirstOrDefaultAsync(
-            x => x.UserId == userId && x.Id == installmentPurchaseId,
-            cancellationToken);
-    }
-
-    public Task<CategoryBudget?> GetBudgetAsync(
-        Guid categoryId,
-        CancellationToken cancellationToken = default)
-    {
-        return _db.CategoryBudgets.FirstOrDefaultAsync(
-            x => x.CategoryId == categoryId,
-            cancellationToken);
-    }
-
-    public Task<CategoryBudgetOverride?> GetBudgetOverrideAsync(
-        Guid budgetId,
-        DateOnly month,
-        CancellationToken cancellationToken = default)
-    {
-        return _db.CategoryBudgetOverrides.FirstOrDefaultAsync(
-            x => x.CategoryBudgetId == budgetId && x.Month == month,
-            cancellationToken);
-    }
-
-    public async Task<IReadOnlyCollection<FinancialTransaction>> GetTransactionsAsync(
+    public async Task<IReadOnlyCollection<Exercise>> GetExercisesAsync(
         string userId,
         CancellationToken cancellationToken = default)
     {
-        return await _db.FinancialTransactions
+        return await _db.Exercises
             .AsNoTracking()
             .Where(x => x.UserId == userId)
             .ToArrayAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<FinancialTransaction>> GetTransactionsForInstallmentPurchaseAsync(
+    public Task<WorkoutSheet?> GetSheetAsync(
         string userId,
-        Guid installmentPurchaseId,
+        Guid sheetId,
         CancellationToken cancellationToken = default)
     {
-        return await _db.FinancialTransactions
-            .Where(x => x.UserId == userId && x.InstallmentPurchaseId == installmentPurchaseId)
-            .ToArrayAsync(cancellationToken);
+        return _db.WorkoutSheets.FirstOrDefaultAsync(
+            x => x.UserId == userId && x.Id == sheetId,
+            cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<RecurringTransaction>> GetRecurringTransactionsAsync(
+    public async Task<IReadOnlyCollection<WorkoutSheet>> GetSheetsAsync(
         string userId,
         CancellationToken cancellationToken = default)
     {
-        return await _db.RecurringTransactions
+        return await _db.WorkoutSheets
+            .AsNoTracking()
             .Where(x => x.UserId == userId)
             .ToArrayAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<CategoryBudget>> GetBudgetsAsync(
-        IReadOnlyCollection<Guid> categoryIds,
+    public async Task<IReadOnlyCollection<WorkoutSheetExercise>> GetSheetExercisesAsync(
+        Guid sheetId,
         CancellationToken cancellationToken = default)
     {
-        return await _db.CategoryBudgets
-            .AsNoTracking()
-            .Where(x => categoryIds.Contains(x.CategoryId))
+        return await _db.WorkoutSheetExercises
+            .Where(x => x.WorkoutSheetId == sheetId)
+            .OrderBy(x => x.Position)
             .ToArrayAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<CategoryBudgetOverride>> GetBudgetOverridesAsync(
-        IReadOnlyCollection<Guid> budgetIds,
-        DateOnly month,
+    public async Task<IReadOnlyCollection<WorkoutSheetExerciseSet>> GetSheetSetsAsync(
+        IReadOnlyCollection<Guid> sheetExerciseIds,
         CancellationToken cancellationToken = default)
     {
-        return await _db.CategoryBudgetOverrides
-            .AsNoTracking()
-            .Where(x => budgetIds.Contains(x.CategoryBudgetId) && x.Month == month)
+        return await _db.WorkoutSheetExerciseSets
+            .Where(x => sheetExerciseIds.Contains(x.WorkoutSheetExerciseId))
+            .OrderBy(x => x.Position)
             .ToArrayAsync(cancellationToken);
+    }
+
+    public Task<WorkoutSession?> GetSessionAsync(
+        string userId,
+        Guid sessionId,
+        CancellationToken cancellationToken = default)
+    {
+        return _db.WorkoutSessions.FirstOrDefaultAsync(
+            x => x.UserId == userId && x.Id == sessionId && x.DeletedAt == null,
+            cancellationToken);
+    }
+
+    public async Task<IReadOnlyCollection<WorkoutSession>> GetSessionsAsync(
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _db.WorkoutSessions
+            .AsNoTracking()
+            .Where(x => x.UserId == userId)
+            .ToArrayAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyCollection<WorkoutSessionExercise>> GetSessionExercisesAsync(
+        Guid sessionId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _db.WorkoutSessionExercises
+            .Where(x => x.WorkoutSessionId == sessionId)
+            .OrderBy(x => x.Position)
+            .ToArrayAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyCollection<WorkoutSessionSet>> GetSessionSetsAsync(
+        IReadOnlyCollection<Guid> sessionExerciseIds,
+        CancellationToken cancellationToken = default)
+    {
+        return await _db.WorkoutSessionSets
+            .Where(x => sessionExerciseIds.Contains(x.WorkoutSessionExerciseId))
+            .OrderBy(x => x.Position)
+            .ToArrayAsync(cancellationToken);
+    }
+
+    public Task<WeightUnit?> GetPreferredWeightUnitAsync(
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        return _db.UserPreferences
+            .AsNoTracking()
+            .Where(x => x.UserId == userId)
+            .Select(x => (WeightUnit?)x.PreferredWeightUnit)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public Task<XpEventRule?> GetXpRuleAsync(
@@ -142,9 +130,7 @@ public sealed class FinanceRepository : IFinanceRepository
     {
         return _db.XpEventRules
             .AsNoTracking()
-            .FirstOrDefaultAsync(
-                x => x.UserId == userId && x.EventType == eventType,
-                cancellationToken);
+            .FirstOrDefaultAsync(x => x.UserId == userId && x.EventType == eventType, cancellationToken);
     }
 
     public async Task<IReadOnlyCollection<XpLedgerEntry>> GetXpEntriesForSourceAsync(
@@ -156,6 +142,17 @@ public sealed class FinanceRepository : IFinanceRepository
         return await _db.XpLedgerEntries
             .AsNoTracking()
             .Where(x => x.UserId == userId && x.SourceType == sourceType && x.SourceId == sourceId)
+            .ToArrayAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyCollection<XpLedgerEntry>> GetXpEntriesAsync(
+        string userId,
+        string sourceType,
+        CancellationToken cancellationToken = default)
+    {
+        return await _db.XpLedgerEntries
+            .AsNoTracking()
+            .Where(x => x.UserId == userId && x.SourceType == sourceType)
             .ToArrayAsync(cancellationToken);
     }
 
@@ -184,7 +181,6 @@ public sealed class FinanceRepository : IFinanceRepository
         CancellationToken cancellationToken = default)
     {
         return await _db.UserBadges
-            .AsNoTracking()
             .Where(x => x.UserId == userId)
             .ToArrayAsync(cancellationToken);
     }
@@ -193,6 +189,7 @@ public sealed class FinanceRepository : IFinanceRepository
         where T : class
     {
         _db.Set<T>().Add(entity);
+
         return Task.CompletedTask;
     }
 
@@ -200,6 +197,7 @@ public sealed class FinanceRepository : IFinanceRepository
         where T : class
     {
         _db.Set<T>().AddRange(entities);
+
         return Task.CompletedTask;
     }
 
@@ -207,6 +205,7 @@ public sealed class FinanceRepository : IFinanceRepository
         where T : class
     {
         _db.Set<T>().Remove(entity);
+
         return Task.CompletedTask;
     }
 }

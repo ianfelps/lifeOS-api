@@ -53,7 +53,7 @@ public sealed class UserRepository : IUserRepository
             .AsNoTracking()
             .FirstOrDefaultAsync(
                 x => x.Id == userId && x.Active,
-            cancellationToken);
+                cancellationToken);
     }
 
     public async Task UpdatePasswordHashAsync(

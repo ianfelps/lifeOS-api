@@ -40,11 +40,14 @@ public sealed class AuthController : ControllerBase
 
     [HttpGet("me")]
     [Authorize]
-    public async Task<ActionResult<MeResponseDto>> Me(CancellationToken cancellationToken)
+    public async Task<ActionResult<MeResponseDto>> Me(
+        CancellationToken cancellationToken)
     {
         try
         {
-            return Ok(await _authService.GetMeAsync(_currentUser.UserId, cancellationToken));
+            return Ok(await _authService.GetMeAsync(
+                _currentUser.UserId,
+                cancellationToken));
         }
         catch (UnauthorizedAccessException exception)
         {

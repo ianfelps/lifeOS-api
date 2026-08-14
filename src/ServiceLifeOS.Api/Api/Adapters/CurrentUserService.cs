@@ -37,6 +37,8 @@ public sealed class CurrentUserService : ICurrentUser
             return null;
         }
 
-        return string.IsNullOrWhiteSpace(subject) ? nameIdentifier : subject;
+        return string.IsNullOrWhiteSpace(subject)
+            ? nameIdentifier
+            : subject;
     }
 }

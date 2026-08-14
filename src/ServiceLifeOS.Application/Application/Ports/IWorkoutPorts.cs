@@ -2,62 +2,53 @@ using ServiceLifeOS.Domain.Entities;
 
 namespace ServiceLifeOS.Application.Ports;
 
-public interface IFinanceRepository
+public interface IWorkoutRepository
 {
-    Task<IReadOnlyCollection<FinancialCategory>> GetCategoriesAsync(
+    Task<Exercise?> GetExerciseAsync(
         string userId,
-        bool includeArchived,
+        Guid exerciseId,
         CancellationToken cancellationToken = default);
 
-    Task<FinancialCategory?> GetCategoryAsync(
-        string userId,
-        Guid categoryId,
-        CancellationToken cancellationToken = default);
-
-    Task<FinancialTransaction?> GetTransactionAsync(
-        string userId,
-        Guid transactionId,
-        CancellationToken cancellationToken = default);
-
-    Task<RecurringTransaction?> GetRecurringTransactionAsync(
-        string userId,
-        Guid recurringTransactionId,
-        CancellationToken cancellationToken = default);
-
-    Task<InstallmentPurchase?> GetInstallmentPurchaseAsync(
-        string userId,
-        Guid installmentPurchaseId,
-        CancellationToken cancellationToken = default);
-
-    Task<CategoryBudget?> GetBudgetAsync(
-        Guid categoryId,
-        CancellationToken cancellationToken = default);
-
-    Task<CategoryBudgetOverride?> GetBudgetOverrideAsync(
-        Guid budgetId,
-        DateOnly month,
-        CancellationToken cancellationToken = default);
-
-    Task<IReadOnlyCollection<FinancialTransaction>> GetTransactionsAsync(
+    Task<IReadOnlyCollection<Exercise>> GetExercisesAsync(
         string userId,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyCollection<FinancialTransaction>> GetTransactionsForInstallmentPurchaseAsync(
+    Task<WorkoutSheet?> GetSheetAsync(
         string userId,
-        Guid installmentPurchaseId,
+        Guid sheetId,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyCollection<RecurringTransaction>> GetRecurringTransactionsAsync(
+    Task<IReadOnlyCollection<WorkoutSheet>> GetSheetsAsync(
         string userId,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyCollection<CategoryBudget>> GetBudgetsAsync(
-        IReadOnlyCollection<Guid> categoryIds,
+    Task<IReadOnlyCollection<WorkoutSheetExercise>> GetSheetExercisesAsync(
+        Guid sheetId,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyCollection<CategoryBudgetOverride>> GetBudgetOverridesAsync(
-        IReadOnlyCollection<Guid> budgetIds,
-        DateOnly month,
+    Task<IReadOnlyCollection<WorkoutSheetExerciseSet>> GetSheetSetsAsync(
+        IReadOnlyCollection<Guid> sheetExerciseIds,
+        CancellationToken cancellationToken = default);
+
+    Task<WorkoutSession?> GetSessionAsync(
+        string userId,
+        Guid sessionId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<WorkoutSession>> GetSessionsAsync(
+        string userId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<WorkoutSessionExercise>> GetSessionExercisesAsync(
+        Guid sessionId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<WorkoutSessionSet>> GetSessionSetsAsync(
+        IReadOnlyCollection<Guid> sessionExerciseIds,
+        CancellationToken cancellationToken = default);
+
+    Task<WeightUnit?> GetPreferredWeightUnitAsync(
+        string userId,
         CancellationToken cancellationToken = default);
 
     Task<XpEventRule?> GetXpRuleAsync(
@@ -69,6 +60,11 @@ public interface IFinanceRepository
         string userId,
         string sourceType,
         Guid sourceId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<XpLedgerEntry>> GetXpEntriesAsync(
+        string userId,
+        string sourceType,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyCollection<Badge>> GetBadgesAsync(

@@ -14,7 +14,9 @@ public sealed class OperationsController : ControllerBase
     private readonly OperationsService _operationsService;
     private readonly ICurrentUser _currentUser;
 
-    public OperationsController(OperationsService operationsService, ICurrentUser currentUser)
+    public OperationsController(
+        OperationsService operationsService,
+        ICurrentUser currentUser)
     {
         _operationsService = operationsService;
         _currentUser = currentUser;

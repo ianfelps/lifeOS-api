@@ -2,62 +2,34 @@ using ServiceLifeOS.Domain.Entities;
 
 namespace ServiceLifeOS.Application.Ports;
 
-public interface IFinanceRepository
+public interface IHabitRepository
 {
-    Task<IReadOnlyCollection<FinancialCategory>> GetCategoriesAsync(
+    Task<Habit?> GetHabitAsync(
         string userId,
-        bool includeArchived,
+        Guid habitId,
         CancellationToken cancellationToken = default);
 
-    Task<FinancialCategory?> GetCategoryAsync(
-        string userId,
-        Guid categoryId,
-        CancellationToken cancellationToken = default);
-
-    Task<FinancialTransaction?> GetTransactionAsync(
-        string userId,
-        Guid transactionId,
-        CancellationToken cancellationToken = default);
-
-    Task<RecurringTransaction?> GetRecurringTransactionAsync(
-        string userId,
-        Guid recurringTransactionId,
-        CancellationToken cancellationToken = default);
-
-    Task<InstallmentPurchase?> GetInstallmentPurchaseAsync(
-        string userId,
-        Guid installmentPurchaseId,
-        CancellationToken cancellationToken = default);
-
-    Task<CategoryBudget?> GetBudgetAsync(
-        Guid categoryId,
-        CancellationToken cancellationToken = default);
-
-    Task<CategoryBudgetOverride?> GetBudgetOverrideAsync(
-        Guid budgetId,
-        DateOnly month,
-        CancellationToken cancellationToken = default);
-
-    Task<IReadOnlyCollection<FinancialTransaction>> GetTransactionsAsync(
+    Task<IReadOnlyCollection<Habit>> GetHabitsAsync(
         string userId,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyCollection<FinancialTransaction>> GetTransactionsForInstallmentPurchaseAsync(
+    Task<HabitSchedule?> GetScheduleAsync(
+        Guid habitId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<HabitScheduleWeekday>> GetWeekdaysAsync(
+        Guid scheduleId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<HabitCompletion>> GetCompletionsAsync(
         string userId,
-        Guid installmentPurchaseId,
+        Guid habitId,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyCollection<RecurringTransaction>> GetRecurringTransactionsAsync(
+    Task<HabitCompletion?> GetCompletionAsync(
         string userId,
-        CancellationToken cancellationToken = default);
-
-    Task<IReadOnlyCollection<CategoryBudget>> GetBudgetsAsync(
-        IReadOnlyCollection<Guid> categoryIds,
-        CancellationToken cancellationToken = default);
-
-    Task<IReadOnlyCollection<CategoryBudgetOverride>> GetBudgetOverridesAsync(
-        IReadOnlyCollection<Guid> budgetIds,
-        DateOnly month,
+        Guid habitId,
+        Guid completionId,
         CancellationToken cancellationToken = default);
 
     Task<XpEventRule?> GetXpRuleAsync(
@@ -69,6 +41,11 @@ public interface IFinanceRepository
         string userId,
         string sourceType,
         Guid sourceId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<XpLedgerEntry>> GetXpEntriesAsync(
+        string userId,
+        string sourceType,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyCollection<Badge>> GetBadgesAsync(
