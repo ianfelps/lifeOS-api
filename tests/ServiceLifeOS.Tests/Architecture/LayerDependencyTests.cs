@@ -11,7 +11,9 @@ public sealed class LayerDependencyTests
     {
         var references = typeof(DependencyInjection).Assembly.GetReferencedAssemblies();
 
-        Assert.DoesNotContain(references, x => x.Name?.StartsWith("Microsoft.EntityFrameworkCore") == true);
+        Assert.DoesNotContain(
+            references,
+            x => x.Name?.StartsWith("Microsoft.EntityFrameworkCore") == true);
     }
 
     [Fact]
@@ -19,7 +21,9 @@ public sealed class LayerDependencyTests
     {
         var references = typeof(DependencyInjection).Assembly.GetReferencedAssemblies();
 
-        Assert.DoesNotContain(references, x => x.Name?.StartsWith("Microsoft.AspNetCore") == true);
+        Assert.DoesNotContain(
+            references,
+            x => x.Name?.StartsWith("Microsoft.AspNetCore") == true);
     }
 
     [Fact]

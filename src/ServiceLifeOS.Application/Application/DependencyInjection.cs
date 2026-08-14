@@ -12,6 +12,7 @@ public static class DependencyInjection
         services.AddScoped<OperationsService>();
         services.AddScoped<FinanceService>();
         services.AddScoped<HabitService>();
+        services.AddScoped<WorkoutService>();
 
         return services;
     }

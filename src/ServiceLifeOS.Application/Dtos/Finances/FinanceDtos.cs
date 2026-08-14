@@ -5,14 +5,18 @@ namespace ServiceLifeOS.Dtos.Finances;
 public sealed class FinancialCategoryRequestDto
 {
     public string Name { get; set; } = string.Empty;
+
     public FinancialCategoryType Type { get; set; }
 }
 
 public sealed class FinancialCategoryResponseDto
 {
     public Guid Id { get; set; }
+
     public string Name { get; set; } = string.Empty;
+
     public FinancialCategoryType Type { get; set; }
+
     public bool Archived { get; set; }
 }
 
@@ -62,21 +66,32 @@ public sealed class TransactionResponseDto
 public sealed class TransactionQueryDto
 {
     public int Page { get; set; } = 1;
+
     public int PageSize { get; set; } = 50;
+
     public DateOnly? From { get; set; }
+
     public DateOnly? To { get; set; }
+
     public Guid? CategoryId { get; set; }
+
     public FinancialCategoryType? Type { get; set; }
+
     public TransactionStatus? Status { get; set; }
+
     public PaymentMethod? PaymentMethod { get; set; }
+
     public string Sort { get; set; } = "date-desc";
 }
 
 public sealed class PagedTransactionResponseDto
 {
     public IReadOnlyCollection<TransactionResponseDto> Items { get; set; } = [];
+
     public int Page { get; set; }
+
     public int PageSize { get; set; }
+
     public int TotalCount { get; set; }
 }
 
@@ -122,7 +137,13 @@ public sealed class InstallmentPurchaseResponseDto
     public IReadOnlyCollection<TransactionResponseDto> Installments { get; set; } = [];
 }
 
-public enum BudgetAlert { None, EightyPercent, AtLimit, Exceeded }
+public enum BudgetAlert
+{
+    None,
+    EightyPercent,
+    AtLimit,
+    Exceeded
+}
 
 public sealed class CategorySpendingResponseDto
 {

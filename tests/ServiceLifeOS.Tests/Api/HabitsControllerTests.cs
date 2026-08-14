@@ -14,9 +14,18 @@ public sealed class HabitsControllerTests
     public async Task CreateHabit_ReturnsCreatedHabitForAuthenticatedUser()
     {
         var repository = new FakeHabitRepository();
-        var controller = new HabitsController(new HabitService(repository, new FakeAuditLogRepository(), new FakeUnitOfWork()), new FakeCurrentUser());
+        var controller = new HabitsController(
+            new HabitService(repository, new FakeAuditLogRepository(), new FakeUnitOfWork()),
+            new FakeCurrentUser());
 
-        var result = await controller.CreateHabit(new() { Title = "Read", Priority = HabitPriority.Medium, Schedule = new() { Type = HabitScheduleType.Daily } }, CancellationToken.None);
+        var result = await controller.CreateHabit(
+            new()
+            {
+                Title = "Read",
+                Priority = HabitPriority.Medium,
+                Schedule = new() { Type = HabitScheduleType.Daily }
+            },
+            CancellationToken.None);
 
         var response = Assert.IsType<CreatedResult>(result.Result);
         Assert.Equal("user-1", Assert.Single(repository.Habits).UserId);
@@ -35,10 +44,36 @@ public sealed class HabitsControllerTests
         public List<Habit> Habits { get; } = [];
         public List<HabitSchedule> Schedules { get; } = [];
         public List<HabitScheduleWeekday> Weekdays { get; } = [];
-        public Task<Habit?> GetHabitAsync(string userId, Guid habitId, CancellationToken cancellationToken = default) => Task.FromResult(Habits.FirstOrDefault(x => x.UserId == userId && x.Id == habitId));
-        public Task<IReadOnlyCollection<Habit>> GetHabitsAsync(string userId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyCollection<Habit>>(Habits.Where(x => x.UserId == userId).ToArray());
-        public Task<HabitSchedule?> GetScheduleAsync(Guid habitId, CancellationToken cancellationToken = default) => Task.FromResult(Schedules.FirstOrDefault(x => x.HabitId == habitId));
-        public Task<IReadOnlyCollection<HabitScheduleWeekday>> GetWeekdaysAsync(Guid scheduleId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyCollection<HabitScheduleWeekday>>(Weekdays.Where(x => x.HabitScheduleId == scheduleId).ToArray());
+        public Task<Habit?> GetHabitAsync(
+            string userId,
+            Guid habitId,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(Habits.FirstOrDefault(x => x.UserId == userId && x.Id == habitId));
+        }
+
+        public Task<IReadOnlyCollection<Habit>> GetHabitsAsync(
+            string userId,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<IReadOnlyCollection<Habit>>(
+                Habits.Where(x => x.UserId == userId).ToArray());
+        }
+
+        public Task<HabitSchedule?> GetScheduleAsync(
+            Guid habitId,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(Schedules.FirstOrDefault(x => x.HabitId == habitId));
+        }
+
+        public Task<IReadOnlyCollection<HabitScheduleWeekday>> GetWeekdaysAsync(
+            Guid scheduleId,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<IReadOnlyCollection<HabitScheduleWeekday>>(
+                Weekdays.Where(x => x.HabitScheduleId == scheduleId).ToArray());
+        }
         public Task<IReadOnlyCollection<HabitCompletion>> GetCompletionsAsync(string userId, Guid habitId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyCollection<HabitCompletion>>([]);
         public Task<HabitCompletion?> GetCompletionAsync(string userId, Guid habitId, Guid completionId, CancellationToken cancellationToken = default) => Task.FromResult<HabitCompletion?>(null);
         public Task<XpEventRule?> GetXpRuleAsync(string userId, XpEventType eventType, CancellationToken cancellationToken = default) => Task.FromResult<XpEventRule?>(null);

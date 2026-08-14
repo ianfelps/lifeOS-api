@@ -14,7 +14,16 @@ public sealed class HabitServiceTests
         var repository = new FakeHabitRepository();
         var service = CreateService(repository);
 
-        var habit = await service.CreateHabitAsync("user-1", new() { Title = "Read", Priority = HabitPriority.Medium, Schedule = new() { Type = HabitScheduleType.Weekdays, Weekdays = [DayOfWeek.Monday, DayOfWeek.Friday] } });
+        var habit = await service.CreateHabitAsync("user-1", new()
+        {
+            Title = "Read",
+            Priority = HabitPriority.Medium,
+            Schedule = new()
+            {
+                Type = HabitScheduleType.Weekdays,
+                Weekdays = [DayOfWeek.Monday, DayOfWeek.Friday]
+            }
+        });
 
         Assert.Equal(HabitScheduleType.Weekdays, habit.Schedule.Type);
         Assert.Equal([DayOfWeek.Monday, DayOfWeek.Friday], habit.Schedule.Weekdays);
@@ -26,7 +35,12 @@ public sealed class HabitServiceTests
     {
         var service = CreateService(new FakeHabitRepository());
 
-        await Assert.ThrowsAsync<ArgumentException>(() => service.CreateHabitAsync("user-1", new() { Title = "Drink water", Schedule = new() { Type = HabitScheduleType.DailyCount, TargetCount = 0 } }));
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => service.CreateHabitAsync("user-1", new()
+            {
+                Title = "Drink water",
+                Schedule = new() { Type = HabitScheduleType.DailyCount, TargetCount = 0 }
+            }));
     }
 
     [Fact]
@@ -42,7 +56,10 @@ public sealed class HabitServiceTests
         await service.CreateCompletionAsync("user-1", habit.Id, new() { CompletedOn = today });
 
         await Assert.ThrowsAsync<ArgumentException>(() => service.CreateCompletionAsync("user-1", habit.Id, new() { CompletedOn = today }));
-        Assert.Equal(2, repository.XpEntries.Count(x => x.Type == XpLedgerEntryType.Grant && x.EventType == XpEventType.HabitCompletion));
+        Assert.Equal(
+            2,
+            repository.XpEntries.Count(
+                x => x.Type == XpLedgerEntryType.Grant && x.EventType == XpEventType.HabitCompletion));
     }
 
     [Fact]
@@ -68,7 +85,11 @@ public sealed class HabitServiceTests
     public async Task GetProgress_WeekdayScheduleIgnoresDaysOutsideScheduleForStreak()
     {
         var repository = new FakeHabitRepository();
-        var habit = await AddHabitAsync(repository, HabitScheduleType.Weekdays, 1, [DayOfWeek.Monday, DayOfWeek.Wednesday]);
+        var habit = await AddHabitAsync(
+            repository,
+            HabitScheduleType.Weekdays,
+            1,
+            [DayOfWeek.Monday, DayOfWeek.Wednesday]);
         var service = CreateService(repository);
         var monday = LocalToday().AddDays(-((int)LocalToday().DayOfWeek + 6) % 7);
         repository.Completions.AddRange([
@@ -106,20 +127,37 @@ public sealed class HabitServiceTests
         await Assert.ThrowsAsync<KeyNotFoundException>(() => service.CreateCompletionAsync("user-1", habit.Id, new() { CompletedOn = LocalToday() }));
     }
 
-    private static HabitService CreateService(FakeHabitRepository repository) => new(repository, new FakeAuditLogRepository(), new FakeUnitOfWork());
+    private static HabitService CreateService(FakeHabitRepository repository)
+    {
+        return new HabitService(repository, new FakeAuditLogRepository(), new FakeUnitOfWork());
+    }
 
-    private static async Task<Habit> AddHabitAsync(FakeHabitRepository repository, HabitScheduleType type, int targetCount, IReadOnlyCollection<DayOfWeek>? weekdays = null, string userId = "user-1")
+    private static async Task<Habit> AddHabitAsync(
+        FakeHabitRepository repository,
+        HabitScheduleType type,
+        int targetCount,
+        IReadOnlyCollection<DayOfWeek>? weekdays = null,
+        string userId = "user-1")
     {
         var habit = new Habit { UserId = userId, Title = "Habit", Status = HabitStatus.Active };
         var schedule = new HabitSchedule { HabitId = habit.Id, Type = type, TargetCount = targetCount };
         repository.Habits.Add(habit);
         repository.Schedules.Add(schedule);
-        if (weekdays is not null) repository.Weekdays.AddRange(weekdays.Select(x => new HabitScheduleWeekday { HabitScheduleId = schedule.Id, DayOfWeek = x }));
+        if (weekdays is not null)
+        {
+            repository.Weekdays.AddRange(
+                weekdays.Select(x => new HabitScheduleWeekday
+                {
+                    HabitScheduleId = schedule.Id,
+                    DayOfWeek = x
+                }));
+        }
         await Task.CompletedTask;
         return habit;
     }
 
-    private static DateOnly LocalToday() => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "America/Sao_Paulo"));
+    private static DateOnly LocalToday() => DateOnly.FromDateTime(
+        TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "America/Sao_Paulo"));
 
     private sealed class FakeHabitRepository : IHabitRepository
     {

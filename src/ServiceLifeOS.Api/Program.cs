@@ -1,14 +1,14 @@
-using System.Text;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.OpenApi;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using Scalar.AspNetCore;
-using System.Threading.RateLimiting;
 using ServiceLifeOS.Api.Adapters;
 using ServiceLifeOS.Application;
 using ServiceLifeOS.Application.Options;
@@ -34,7 +34,8 @@ var allowedOrigins = builder.Configuration
 if (builder.Environment.IsProduction())
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    if (string.IsNullOrWhiteSpace(connectionString) || allowedOrigins.Length == 0 ||
+    if (string.IsNullOrWhiteSpace(connectionString) ||
+        allowedOrigins.Length == 0 ||
         string.IsNullOrWhiteSpace(jwtOptions?.Issuer) ||
         string.IsNullOrWhiteSpace(jwtOptions?.Audience) ||
         string.IsNullOrWhiteSpace(bootstrapUserOptions.UserId) ||
@@ -103,15 +104,23 @@ builder.Services
                     return;
                 }
 
-                var sessions = context.HttpContext.RequestServices.GetRequiredService<IUserSessionRepository>();
+                var sessions = context.HttpContext.RequestServices
+                    .GetRequiredService<IUserSessionRepository>();
                 var now = DateTime.UtcNow;
-                if (!await sessions.IsActiveAsync(userId, tokenId, now, context.HttpContext.RequestAborted))
+                if (!await sessions.IsActiveAsync(
+                        userId,
+                        tokenId,
+                        now,
+                        context.HttpContext.RequestAborted))
                 {
                     context.Fail("Session is no longer active.");
                     return;
                 }
 
-                await sessions.TouchAsync(tokenId, now, context.HttpContext.RequestAborted);
+                await sessions.TouchAsync(
+                    tokenId,
+                    now,
+                    context.HttpContext.RequestAborted);
             }
         };
     });
@@ -158,7 +167,8 @@ builder.Services.AddRateLimiter(options =>
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
     options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
@@ -209,8 +219,12 @@ app.Use(async (context, next) =>
     context.Response.Headers["X-Content-Type-Options"] = "nosniff";
     context.Response.Headers["X-Frame-Options"] = "DENY";
     context.Response.Headers["Referrer-Policy"] = "no-referrer";
-    context.Response.Headers["Content-Security-Policy"] = context.Request.Path.StartsWithSegments("/scalar")
-        ? "default-src 'self'; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"
+    context.Response.Headers["Content-Security-Policy"] =
+        context.Request.Path.StartsWithSegments("/scalar")
+        ? "default-src 'self'; script-src 'self' 'unsafe-inline' blob:; " +
+          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+          "font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; " +
+          "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"
         : "default-src 'none'; frame-ancestors 'none'; base-uri 'none'";
     await next(context);
 });

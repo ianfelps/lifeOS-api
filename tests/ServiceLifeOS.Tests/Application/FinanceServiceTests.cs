@@ -12,8 +12,18 @@ public sealed class FinanceServiceTests
     public async Task CreateTransaction_ConfirmedTransactionCreatesXpGrant()
     {
         var repository = new FakeFinanceRepository();
-        repository.Categories.Add(new() { Id = Guid.NewGuid(), UserId = "user-1", Type = FinancialCategoryType.Expense });
-        repository.XpRules.Add(new() { UserId = "user-1", EventType = XpEventType.TransactionConfirmed, Amount = 1 });
+        repository.Categories.Add(new()
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-1",
+            Type = FinancialCategoryType.Expense
+        });
+        repository.XpRules.Add(new()
+        {
+            UserId = "user-1",
+            EventType = XpEventType.TransactionConfirmed,
+            Amount = 1
+        });
         var service = CreateService(repository);
 
         var transaction = await service.CreateTransactionAsync("user-1", new()
@@ -38,9 +48,32 @@ public sealed class FinanceServiceTests
         var categoryId = Guid.NewGuid();
         var transactionId = Guid.NewGuid();
         var repository = new FakeFinanceRepository();
-        repository.Categories.Add(new() { Id = categoryId, UserId = "user-1", Type = FinancialCategoryType.Expense });
-        repository.Transactions.Add(new() { Id = transactionId, UserId = "user-1", CategoryId = categoryId, Amount = 10, TransactionDate = new DateOnly(2026, 8, 12), Type = FinancialCategoryType.Expense, PaymentMethod = PaymentMethod.Pix, Status = TransactionStatus.Confirmed });
-        repository.XpEntries.Add(new() { Id = Guid.NewGuid(), UserId = "user-1", Type = XpLedgerEntryType.Grant, Amount = 1, SourceType = "FinancialTransaction", SourceId = transactionId });
+        repository.Categories.Add(new()
+        {
+            Id = categoryId,
+            UserId = "user-1",
+            Type = FinancialCategoryType.Expense
+        });
+        repository.Transactions.Add(new()
+        {
+            Id = transactionId,
+            UserId = "user-1",
+            CategoryId = categoryId,
+            Amount = 10,
+            TransactionDate = new DateOnly(2026, 8, 12),
+            Type = FinancialCategoryType.Expense,
+            PaymentMethod = PaymentMethod.Pix,
+            Status = TransactionStatus.Confirmed
+        });
+        repository.XpEntries.Add(new()
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-1",
+            Type = XpLedgerEntryType.Grant,
+            Amount = 1,
+            SourceType = "FinancialTransaction",
+            SourceId = transactionId
+        });
         var service = CreateService(repository);
 
         await service.DeleteTransactionAsync("user-1", transactionId);
@@ -55,7 +88,12 @@ public sealed class FinanceServiceTests
     {
         var repository = new FakeFinanceRepository();
         var categoryId = Guid.NewGuid();
-        repository.Categories.Add(new() { Id = categoryId, UserId = "user-1", Type = FinancialCategoryType.Expense });
+        repository.Categories.Add(new()
+        {
+            Id = categoryId,
+            UserId = "user-1",
+            Type = FinancialCategoryType.Expense
+        });
         var service = CreateService(repository);
 
         var purchase = await service.CreateInstallmentPurchaseAsync("user-1", new()
@@ -68,7 +106,9 @@ public sealed class FinanceServiceTests
         });
 
         Assert.Equal(new decimal[] { 33.34m, 33.33m, 33.33m }, purchase.Installments.Select(x => x.Amount));
-        Assert.All(purchase.Installments, x => Assert.Equal(PaymentMethod.InstallmentCredit, x.PaymentMethod));
+        Assert.All(
+            purchase.Installments,
+            x => Assert.Equal(PaymentMethod.InstallmentCredit, x.PaymentMethod));
     }
 
     [Fact]
@@ -77,12 +117,42 @@ public sealed class FinanceServiceTests
         var categoryId = Guid.NewGuid();
         var purchaseId = Guid.NewGuid();
         var repository = new FakeFinanceRepository();
-        repository.Categories.Add(new() { Id = categoryId, UserId = "user-1", Type = FinancialCategoryType.Expense });
-        repository.Purchases.Add(new() { Id = purchaseId, UserId = "user-1", CategoryId = categoryId, TotalAmount = 100, InstallmentCount = 3 });
+        repository.Categories.Add(new()
+        {
+            Id = categoryId,
+            UserId = "user-1",
+            Type = FinancialCategoryType.Expense
+        });
+        repository.Purchases.Add(new()
+        {
+            Id = purchaseId,
+            UserId = "user-1",
+            CategoryId = categoryId,
+            TotalAmount = 100,
+            InstallmentCount = 3
+        });
         repository.Transactions.AddRange([
-            new FinancialTransaction { Id = Guid.NewGuid(), UserId = "user-1", CategoryId = categoryId, InstallmentPurchaseId = purchaseId, InstallmentNumber = 1, Amount = 33.34m, TransactionDate = new DateOnly(2026, 8, 1), Type = FinancialCategoryType.Expense, PaymentMethod = PaymentMethod.InstallmentCredit, Status = TransactionStatus.Confirmed },
-            new FinancialTransaction { Id = Guid.NewGuid(), UserId = "user-1", CategoryId = categoryId, InstallmentPurchaseId = purchaseId, InstallmentNumber = 2, Amount = 33.33m, TransactionDate = new DateOnly(2026, 9, 1), Type = FinancialCategoryType.Expense, PaymentMethod = PaymentMethod.InstallmentCredit, Status = TransactionStatus.Planned },
-            new FinancialTransaction { Id = Guid.NewGuid(), UserId = "user-1", CategoryId = categoryId, InstallmentPurchaseId = purchaseId, InstallmentNumber = 3, Amount = 33.33m, TransactionDate = new DateOnly(2026, 10, 1), Type = FinancialCategoryType.Expense, PaymentMethod = PaymentMethod.InstallmentCredit, Status = TransactionStatus.Planned }
+            new FinancialTransaction
+            {
+                Id = Guid.NewGuid(), UserId = "user-1", CategoryId = categoryId,
+                InstallmentPurchaseId = purchaseId, InstallmentNumber = 1, Amount = 33.34m,
+                TransactionDate = new DateOnly(2026, 8, 1), Type = FinancialCategoryType.Expense,
+                PaymentMethod = PaymentMethod.InstallmentCredit, Status = TransactionStatus.Confirmed
+            },
+            new FinancialTransaction
+            {
+                Id = Guid.NewGuid(), UserId = "user-1", CategoryId = categoryId,
+                InstallmentPurchaseId = purchaseId, InstallmentNumber = 2, Amount = 33.33m,
+                TransactionDate = new DateOnly(2026, 9, 1), Type = FinancialCategoryType.Expense,
+                PaymentMethod = PaymentMethod.InstallmentCredit, Status = TransactionStatus.Planned
+            },
+            new FinancialTransaction
+            {
+                Id = Guid.NewGuid(), UserId = "user-1", CategoryId = categoryId,
+                InstallmentPurchaseId = purchaseId, InstallmentNumber = 3, Amount = 33.33m,
+                TransactionDate = new DateOnly(2026, 10, 1), Type = FinancialCategoryType.Expense,
+                PaymentMethod = PaymentMethod.InstallmentCredit, Status = TransactionStatus.Planned
+            }
         ]);
         var service = CreateService(repository);
 
@@ -95,7 +165,9 @@ public sealed class FinanceServiceTests
             Status = TransactionStatus.Planned
         });
 
-        Assert.Equal(33.34m, Assert.Single(purchase.Installments, x => x.InstallmentNumber == 1).Amount);
+        Assert.Equal(
+            33.34m,
+            Assert.Single(purchase.Installments, x => x.InstallmentNumber == 1).Amount);
         Assert.Equal(4, purchase.Installments.Count);
         Assert.Equal(2, repository.Transactions.Count(x => x.DeletedAt.HasValue));
     }

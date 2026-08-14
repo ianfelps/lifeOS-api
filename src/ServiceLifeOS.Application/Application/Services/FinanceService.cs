@@ -11,30 +11,60 @@ public sealed class FinanceService
     private readonly IAuditLogRepository _auditLogs;
     private readonly IUnitOfWork _unitOfWork;
 
-    public FinanceService(IFinanceRepository finances, IAuditLogRepository auditLogs, IUnitOfWork unitOfWork)
+    public FinanceService(
+        IFinanceRepository finances,
+        IAuditLogRepository auditLogs,
+        IUnitOfWork unitOfWork)
     {
         _finances = finances;
         _auditLogs = auditLogs;
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<IReadOnlyCollection<FinancialCategoryResponseDto>> GetCategoriesAsync(string userId, bool includeArchived, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<FinancialCategoryResponseDto>> GetCategoriesAsync(
+        string userId,
+        bool includeArchived,
+        CancellationToken cancellationToken = default)
     {
-        return (await _finances.GetCategoriesAsync(userId, includeArchived, cancellationToken)).Select(MapCategory).ToArray();
+        return (await _finances.GetCategoriesAsync(userId, includeArchived, cancellationToken))
+            .Select(MapCategory)
+            .ToArray();
     }
 
-    public async Task<FinancialCategoryResponseDto> CreateCategoryAsync(string userId, FinancialCategoryRequestDto request, CancellationToken cancellationToken = default)
+    public async Task<FinancialCategoryResponseDto> CreateCategoryAsync(
+        string userId,
+        FinancialCategoryRequestDto request,
+        CancellationToken cancellationToken = default)
     {
         ValidateCategory(request);
         var now = DateTime.UtcNow;
-        var category = new FinancialCategory { UserId = userId, Name = request.Name.Trim(), Type = request.Type, CreatedAt = now, UpdatedAt = now };
+        var category = new FinancialCategory
+        {
+            UserId = userId,
+            Name = request.Name.Trim(),
+            Type = request.Type,
+            CreatedAt = now,
+            UpdatedAt = now
+        };
         await _finances.AddAsync(category, cancellationToken);
-        await AuditAsync(userId, AuditAction.Created, "FinancialCategory", category.Id, null, category, now, cancellationToken);
+        await AuditAsync(
+            userId,
+            AuditAction.Created,
+            "FinancialCategory",
+            category.Id,
+            null,
+            category,
+            now,
+            cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return MapCategory(category);
     }
 
-    public async Task<FinancialCategoryResponseDto> UpdateCategoryAsync(string userId, Guid categoryId, FinancialCategoryRequestDto request, CancellationToken cancellationToken = default)
+    public async Task<FinancialCategoryResponseDto> UpdateCategoryAsync(
+        string userId,
+        Guid categoryId,
+        FinancialCategoryRequestDto request,
+        CancellationToken cancellationToken = default)
     {
         ValidateCategory(request);
         var category = await RequiredCategoryAsync(userId, categoryId, cancellationToken);
@@ -42,12 +72,23 @@ public sealed class FinanceService
         category.Name = request.Name.Trim();
         category.Type = request.Type;
         category.UpdatedAt = DateTime.UtcNow;
-        await AuditAsync(userId, AuditAction.Updated, "FinancialCategory", category.Id, previous, category, category.UpdatedAt, cancellationToken);
+        await AuditAsync(
+            userId,
+            AuditAction.Updated,
+            "FinancialCategory",
+            category.Id,
+            previous,
+            category,
+            category.UpdatedAt,
+            cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return MapCategory(category);
     }
 
-    public async Task ArchiveCategoryAsync(string userId, Guid categoryId, CancellationToken cancellationToken = default)
+    public async Task ArchiveCategoryAsync(
+        string userId,
+        Guid categoryId,
+        CancellationToken cancellationToken = default)
     {
         var category = await RequiredCategoryAsync(userId, categoryId, cancellationToken);
         if (category.Archived)
@@ -56,11 +97,23 @@ public sealed class FinanceService
         }
         category.Archived = true;
         category.UpdatedAt = DateTime.UtcNow;
-        await AuditAsync(userId, AuditAction.Archived, "FinancialCategory", category.Id, null, category, category.UpdatedAt, cancellationToken);
+        await AuditAsync(
+            userId,
+            AuditAction.Archived,
+            "FinancialCategory",
+            category.Id,
+            null,
+            category,
+            category.UpdatedAt,
+            cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<BudgetResponseDto?> GetBudgetAsync(string userId, Guid categoryId, DateOnly? month, CancellationToken cancellationToken = default)
+    public async Task<BudgetResponseDto?> GetBudgetAsync(
+        string userId,
+        Guid categoryId,
+        DateOnly? month,
+        CancellationToken cancellationToken = default)
     {
         await RequiredCategoryAsync(userId, categoryId, cancellationToken);
         var budget = await _finances.GetBudgetAsync(categoryId, cancellationToken);
@@ -69,11 +122,22 @@ public sealed class FinanceService
             return null;
         }
         var normalizedMonth = month.HasValue ? FirstDayOfMonth(month.Value) : (DateOnly?)null;
-        var overrideValue = normalizedMonth.HasValue ? await _finances.GetBudgetOverrideAsync(budget.Id, normalizedMonth.Value, cancellationToken) : null;
-        return new() { CategoryId = categoryId, Amount = overrideValue?.Amount ?? budget.Amount, OverrideMonth = overrideValue is null ? null : normalizedMonth };
+        var overrideValue = normalizedMonth.HasValue
+            ? await _finances.GetBudgetOverrideAsync(budget.Id, normalizedMonth.Value, cancellationToken)
+            : null;
+        return new()
+        {
+            CategoryId = categoryId,
+            Amount = overrideValue?.Amount ?? budget.Amount,
+            OverrideMonth = overrideValue is null ? null : normalizedMonth
+        };
     }
 
-    public async Task<BudgetResponseDto> SetBudgetAsync(string userId, Guid categoryId, BudgetRequestDto request, CancellationToken cancellationToken = default)
+    public async Task<BudgetResponseDto> SetBudgetAsync(
+        string userId,
+        Guid categoryId,
+        BudgetRequestDto request,
+        CancellationToken cancellationToken = default)
     {
         ValidateAmount(request.Amount);
         var category = await RequiredCategoryAsync(userId, categoryId, cancellationToken);
@@ -85,7 +149,13 @@ public sealed class FinanceService
         var budget = await _finances.GetBudgetAsync(categoryId, cancellationToken);
         if (budget is null)
         {
-            budget = new() { CategoryId = categoryId, Amount = request.Amount, CreatedAt = now, UpdatedAt = now };
+            budget = new()
+            {
+                CategoryId = categoryId,
+                Amount = request.Amount,
+                CreatedAt = now,
+                UpdatedAt = now
+            };
             await _finances.AddAsync(budget, cancellationToken);
             await AuditAsync(userId, AuditAction.Created, "CategoryBudget", budget.Id, null, budget, now, cancellationToken);
         }
@@ -94,10 +164,22 @@ public sealed class FinanceService
             var previous = budget.Amount;
             budget.Amount = request.Amount;
             budget.UpdatedAt = now;
-            await AuditAsync(userId, AuditAction.Updated, "CategoryBudget", budget.Id, previous, budget.Amount, now, cancellationToken);
+            await AuditAsync(
+                userId,
+                AuditAction.Updated,
+                "CategoryBudget",
+                budget.Id,
+                previous,
+                budget.Amount,
+                now,
+                cancellationToken);
         }
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return new() { CategoryId = categoryId, Amount = budget.Amount };
+        return new()
+        {
+            CategoryId = categoryId,
+            Amount = budget.Amount
+        };
     }
 
     public async Task<BudgetResponseDto> SetBudgetOverrideAsync(string userId, Guid categoryId, DateOnly month, BudgetOverrideRequestDto request, CancellationToken cancellationToken = default)

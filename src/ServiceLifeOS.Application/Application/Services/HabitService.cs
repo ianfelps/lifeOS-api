@@ -15,36 +15,88 @@ public sealed class HabitService
     private readonly IAuditLogRepository _auditLogs;
     private readonly IUnitOfWork _unitOfWork;
 
-    public HabitService(IHabitRepository habits, IAuditLogRepository auditLogs, IUnitOfWork unitOfWork)
+    public HabitService(
+        IHabitRepository habits,
+        IAuditLogRepository auditLogs,
+        IUnitOfWork unitOfWork)
     {
         _habits = habits;
         _auditLogs = auditLogs;
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<PagedHabitResponseDto> GetHabitsAsync(string userId, HabitQueryDto query, CancellationToken cancellationToken = default)
+    public async Task<PagedHabitResponseDto> GetHabitsAsync(
+        string userId,
+        HabitQueryDto query,
+        CancellationToken cancellationToken = default)
     {
-        if (query.Page < 1 || query.PageSize is < 1 or > 100 || (query.Status.HasValue && !Enum.IsDefined(query.Status.Value))) throw new ArgumentException("Habit query is invalid.");
-        var habits = (await _habits.GetHabitsAsync(userId, cancellationToken)).Where(x => query.IncludeArchived || x.Status != HabitStatus.Archived);
-        if (query.Status.HasValue) habits = habits.Where(x => x.Status == query.Status.Value);
+        if (query.Page < 1 || query.PageSize is < 1 or > 100 ||
+            (query.Status.HasValue && !Enum.IsDefined(query.Status.Value)))
+        {
+            throw new ArgumentException("Habit query is invalid.");
+        }
+
+        var habits = (await _habits.GetHabitsAsync(userId, cancellationToken))
+            .Where(x => query.IncludeArchived || x.Status != HabitStatus.Archived);
+        if (query.Status.HasValue)
+        {
+            habits = habits.Where(x => x.Status == query.Status.Value);
+        }
+
         var values = habits.OrderBy(x => x.Title).ThenBy(x => x.Id).ToArray();
         var items = new List<HabitResponseDto>();
-        foreach (var habit in values.Skip((query.Page - 1) * query.PageSize).Take(query.PageSize)) items.Add(await MapHabitAsync(habit, cancellationToken));
-        return new() { Items = items, Page = query.Page, PageSize = query.PageSize, TotalCount = values.Length };
+        foreach (var habit in values.Skip((query.Page - 1) * query.PageSize).Take(query.PageSize))
+        {
+            items.Add(await MapHabitAsync(habit, cancellationToken));
+        }
+
+        return new()
+        {
+            Items = items,
+            Page = query.Page,
+            PageSize = query.PageSize,
+            TotalCount = values.Length
+        };
     }
 
-    public async Task<HabitResponseDto> GetHabitAsync(string userId, Guid habitId, CancellationToken cancellationToken = default) => await MapHabitAsync(await RequiredHabitAsync(userId, habitId, cancellationToken), cancellationToken);
+    public async Task<HabitResponseDto> GetHabitAsync(
+        string userId,
+        Guid habitId,
+        CancellationToken cancellationToken = default)
+    {
+        return await MapHabitAsync(
+            await RequiredHabitAsync(userId, habitId, cancellationToken),
+            cancellationToken);
+    }
 
-    public async Task<HabitResponseDto> CreateHabitAsync(string userId, HabitRequestDto request, CancellationToken cancellationToken = default)
+    public async Task<HabitResponseDto> CreateHabitAsync(
+        string userId,
+        HabitRequestDto request,
+        CancellationToken cancellationToken = default)
     {
         ValidateRequest(request);
         var now = DateTime.UtcNow;
-        var habit = new Habit { UserId = userId, Title = request.Title.Trim(), Priority = request.Priority, CreatedAt = now, UpdatedAt = now };
+        var habit = new Habit
+        {
+            UserId = userId,
+            Title = request.Title.Trim(),
+            Priority = request.Priority,
+            CreatedAt = now,
+            UpdatedAt = now
+        };
         var schedule = CreateSchedule(habit.Id, request.Schedule, now);
         await _habits.AddAsync(habit, cancellationToken);
         await _habits.AddAsync(schedule, cancellationToken);
         await AddWeekdaysAsync(schedule.Id, request.Schedule.Weekdays, cancellationToken);
-        await AuditAsync(userId, AuditAction.Created, "Habit", habit.Id, null, habit, now, cancellationToken);
+        await AuditAsync(
+            userId,
+            AuditAction.Created,
+            "Habit",
+            habit.Id,
+            null,
+            habit,
+            now,
+            cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return await MapHabitAsync(habit, schedule, request.Schedule.Weekdays, cancellationToken);
     }

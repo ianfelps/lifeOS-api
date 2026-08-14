@@ -2,34 +2,53 @@ using ServiceLifeOS.Domain.Entities;
 
 namespace ServiceLifeOS.Application.Ports;
 
-public interface IHabitRepository
+public interface IWorkoutRepository
 {
-    Task<Habit?> GetHabitAsync(
+    Task<Exercise?> GetExerciseAsync(
         string userId,
-        Guid habitId,
+        Guid exerciseId,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyCollection<Habit>> GetHabitsAsync(
+    Task<IReadOnlyCollection<Exercise>> GetExercisesAsync(
         string userId,
         CancellationToken cancellationToken = default);
 
-    Task<HabitSchedule?> GetScheduleAsync(
-        Guid habitId,
-        CancellationToken cancellationToken = default);
-
-    Task<IReadOnlyCollection<HabitScheduleWeekday>> GetWeekdaysAsync(
-        Guid scheduleId,
-        CancellationToken cancellationToken = default);
-
-    Task<IReadOnlyCollection<HabitCompletion>> GetCompletionsAsync(
+    Task<WorkoutSheet?> GetSheetAsync(
         string userId,
-        Guid habitId,
+        Guid sheetId,
         CancellationToken cancellationToken = default);
 
-    Task<HabitCompletion?> GetCompletionAsync(
+    Task<IReadOnlyCollection<WorkoutSheet>> GetSheetsAsync(
         string userId,
-        Guid habitId,
-        Guid completionId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<WorkoutSheetExercise>> GetSheetExercisesAsync(
+        Guid sheetId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<WorkoutSheetExerciseSet>> GetSheetSetsAsync(
+        IReadOnlyCollection<Guid> sheetExerciseIds,
+        CancellationToken cancellationToken = default);
+
+    Task<WorkoutSession?> GetSessionAsync(
+        string userId,
+        Guid sessionId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<WorkoutSession>> GetSessionsAsync(
+        string userId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<WorkoutSessionExercise>> GetSessionExercisesAsync(
+        Guid sessionId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<WorkoutSessionSet>> GetSessionSetsAsync(
+        IReadOnlyCollection<Guid> sessionExerciseIds,
+        CancellationToken cancellationToken = default);
+
+    Task<WeightUnit?> GetPreferredWeightUnitAsync(
+        string userId,
         CancellationToken cancellationToken = default);
 
     Task<XpEventRule?> GetXpRuleAsync(

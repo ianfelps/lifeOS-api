@@ -45,11 +45,14 @@ public sealed class UsersController : ControllerBase
     }
 
     [HttpGet("preferences")]
-    public async Task<ActionResult<UserPreferenceResponseDto>> GetPreferences(CancellationToken cancellationToken)
+    public async Task<ActionResult<UserPreferenceResponseDto>> GetPreferences(
+        CancellationToken cancellationToken)
     {
         try
         {
-            return Ok(await _userService.GetPreferenceAsync(_currentUser.UserId, cancellationToken));
+            return Ok(await _userService.GetPreferenceAsync(
+                _currentUser.UserId,
+                cancellationToken));
         }
         catch (InvalidOperationException exception)
         {

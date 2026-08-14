@@ -4,77 +4,123 @@ using ServiceLifeOS.Domain.Entities;
 
 namespace ServiceLifeOS.Infrastructure.Persistence.Repositories;
 
-public sealed class HabitRepository : IHabitRepository
+public sealed class WorkoutRepository : IWorkoutRepository
 {
     private readonly AppDbContext _db;
-
-    public HabitRepository(AppDbContext db)
+    public WorkoutRepository(AppDbContext db)
     {
         _db = db;
     }
 
-    public Task<Habit?> GetHabitAsync(
+    public Task<Exercise?> GetExerciseAsync(
         string userId,
-        Guid habitId,
+        Guid exerciseId,
         CancellationToken cancellationToken = default)
     {
-        return _db.Habits.FirstOrDefaultAsync(
-            x => x.UserId == userId && x.Id == habitId,
+        return _db.Exercises.FirstOrDefaultAsync(
+            x => x.UserId == userId && x.Id == exerciseId,
             cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<Habit>> GetHabitsAsync(
+    public async Task<IReadOnlyCollection<Exercise>> GetExercisesAsync(
         string userId,
         CancellationToken cancellationToken = default)
     {
-        return await _db.Habits
+        return await _db.Exercises
             .AsNoTracking()
             .Where(x => x.UserId == userId)
             .ToArrayAsync(cancellationToken);
     }
 
-    public Task<HabitSchedule?> GetScheduleAsync(
-        Guid habitId,
+    public Task<WorkoutSheet?> GetSheetAsync(
+        string userId,
+        Guid sheetId,
         CancellationToken cancellationToken = default)
     {
-        return _db.HabitSchedules.FirstOrDefaultAsync(
-            x => x.HabitId == habitId,
+        return _db.WorkoutSheets.FirstOrDefaultAsync(
+            x => x.UserId == userId && x.Id == sheetId,
             cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<HabitScheduleWeekday>> GetWeekdaysAsync(
-        Guid scheduleId,
+    public async Task<IReadOnlyCollection<WorkoutSheet>> GetSheetsAsync(
+        string userId,
         CancellationToken cancellationToken = default)
     {
-        return await _db.HabitScheduleWeekdays
+        return await _db.WorkoutSheets
             .AsNoTracking()
-            .Where(x => x.HabitScheduleId == scheduleId)
+            .Where(x => x.UserId == userId)
             .ToArrayAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<HabitCompletion>> GetCompletionsAsync(
-        string userId,
-        Guid habitId,
+    public async Task<IReadOnlyCollection<WorkoutSheetExercise>> GetSheetExercisesAsync(
+        Guid sheetId,
         CancellationToken cancellationToken = default)
     {
-        return await _db.HabitCompletions
-            .AsNoTracking()
-            .Where(x => x.UserId == userId && x.HabitId == habitId)
+        return await _db.WorkoutSheetExercises
+            .Where(x => x.WorkoutSheetId == sheetId)
+            .OrderBy(x => x.Position)
             .ToArrayAsync(cancellationToken);
     }
 
-    public Task<HabitCompletion?> GetCompletionAsync(
-        string userId,
-        Guid habitId,
-        Guid completionId,
+    public async Task<IReadOnlyCollection<WorkoutSheetExerciseSet>> GetSheetSetsAsync(
+        IReadOnlyCollection<Guid> sheetExerciseIds,
         CancellationToken cancellationToken = default)
     {
-        return _db.HabitCompletions.FirstOrDefaultAsync(
-            x => x.UserId == userId &&
-                x.HabitId == habitId &&
-                x.Id == completionId &&
-                x.DeletedAt == null,
+        return await _db.WorkoutSheetExerciseSets
+            .Where(x => sheetExerciseIds.Contains(x.WorkoutSheetExerciseId))
+            .OrderBy(x => x.Position)
+            .ToArrayAsync(cancellationToken);
+    }
+
+    public Task<WorkoutSession?> GetSessionAsync(
+        string userId,
+        Guid sessionId,
+        CancellationToken cancellationToken = default)
+    {
+        return _db.WorkoutSessions.FirstOrDefaultAsync(
+            x => x.UserId == userId && x.Id == sessionId && x.DeletedAt == null,
             cancellationToken);
+    }
+
+    public async Task<IReadOnlyCollection<WorkoutSession>> GetSessionsAsync(
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _db.WorkoutSessions
+            .AsNoTracking()
+            .Where(x => x.UserId == userId)
+            .ToArrayAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyCollection<WorkoutSessionExercise>> GetSessionExercisesAsync(
+        Guid sessionId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _db.WorkoutSessionExercises
+            .Where(x => x.WorkoutSessionId == sessionId)
+            .OrderBy(x => x.Position)
+            .ToArrayAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyCollection<WorkoutSessionSet>> GetSessionSetsAsync(
+        IReadOnlyCollection<Guid> sessionExerciseIds,
+        CancellationToken cancellationToken = default)
+    {
+        return await _db.WorkoutSessionSets
+            .Where(x => sessionExerciseIds.Contains(x.WorkoutSessionExerciseId))
+            .OrderBy(x => x.Position)
+            .ToArrayAsync(cancellationToken);
+    }
+
+    public Task<WeightUnit?> GetPreferredWeightUnitAsync(
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        return _db.UserPreferences
+            .AsNoTracking()
+            .Where(x => x.UserId == userId)
+            .Select(x => (WeightUnit?)x.PreferredWeightUnit)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public Task<XpEventRule?> GetXpRuleAsync(
@@ -84,9 +130,7 @@ public sealed class HabitRepository : IHabitRepository
     {
         return _db.XpEventRules
             .AsNoTracking()
-            .FirstOrDefaultAsync(
-                x => x.UserId == userId && x.EventType == eventType,
-                cancellationToken);
+            .FirstOrDefaultAsync(x => x.UserId == userId && x.EventType == eventType, cancellationToken);
     }
 
     public async Task<IReadOnlyCollection<XpLedgerEntry>> GetXpEntriesForSourceAsync(
@@ -137,7 +181,6 @@ public sealed class HabitRepository : IHabitRepository
         CancellationToken cancellationToken = default)
     {
         return await _db.UserBadges
-            .AsNoTracking()
             .Where(x => x.UserId == userId)
             .ToArrayAsync(cancellationToken);
     }
@@ -146,6 +189,7 @@ public sealed class HabitRepository : IHabitRepository
         where T : class
     {
         _db.Set<T>().Add(entity);
+
         return Task.CompletedTask;
     }
 
@@ -153,6 +197,7 @@ public sealed class HabitRepository : IHabitRepository
         where T : class
     {
         _db.Set<T>().AddRange(entities);
+
         return Task.CompletedTask;
     }
 
@@ -160,6 +205,7 @@ public sealed class HabitRepository : IHabitRepository
         where T : class
     {
         _db.Set<T>().Remove(entity);
+
         return Task.CompletedTask;
     }
 }
