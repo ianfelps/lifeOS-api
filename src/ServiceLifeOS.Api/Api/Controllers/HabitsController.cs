@@ -113,4 +113,10 @@ public sealed class HabitsController : ControllerBase
         [FromQuery] DateOnly date,
         CancellationToken cancellationToken) =>
         _habitService.GetPendingHabitsAsync(_currentUser.UserId, date, cancellationToken);
+
+    [HttpGet("reminders")]
+    public Task<IReadOnlyCollection<HabitReminderResponseDto>> GetReminders(
+        [FromQuery] DateOnly date,
+        CancellationToken cancellationToken) =>
+        _habitService.GetRemindersAsync(_currentUser.UserId, date, cancellationToken);
 }

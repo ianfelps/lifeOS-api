@@ -1,4 +1,5 @@
 using ServiceLifeOS.Application.Ports;
+using ServiceLifeOS.Application.Options;
 using ServiceLifeOS.Application.Services;
 using ServiceLifeOS.Domain.Entities;
 using ServiceLifeOS.Dtos.Operations;
@@ -28,7 +29,8 @@ public sealed class UserAndOperationsServiceTests
             sessions,
             auditLogs,
             new FakePasswordHasher(),
-            new FakeUnitOfWork());
+            new FakeUnitOfWork(),
+            new PasswordPolicyOptions { MinimumLength = 3 });
 
         await service.ChangePasswordAsync("user-1", "current-token", new()
         {

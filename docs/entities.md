@@ -50,6 +50,8 @@ As entidades do MVP pertencem diretamente a `AppUser` por `UserId`. Todas as nov
 - `UserBadge`: registro de badge desbloqueado pelo usuario.
 - `XpLedgerEntry`: razao imutavel de concessoes, reversoes e ajustes de XP.
 
+`XpLedgerEntry` e a fonte de verdade do XP. O perfil, nivel, metas automaticas e desbloqueios de badges sao valores derivados na camada Application pelo modulo de gamificacao.
+
 ## Dados iniciais
 
 No startup, o inicializador cria dados somente quando inexistentes para cada usuario provisionado:

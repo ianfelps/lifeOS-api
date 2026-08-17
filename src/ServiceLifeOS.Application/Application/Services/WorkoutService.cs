@@ -11,14 +11,17 @@ public sealed class WorkoutService
     private readonly IWorkoutRepository _workouts;
     private readonly IAuditLogRepository _auditLogs;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly GamificationService? _gamification;
     public WorkoutService(
         IWorkoutRepository workouts,
         IAuditLogRepository auditLogs,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        GamificationService? gamification = null)
     {
         _workouts = workouts;
         _auditLogs = auditLogs;
         _unitOfWork = unitOfWork;
+        _gamification = gamification;
     }
 
     public async Task<IReadOnlyCollection<ExerciseResponseDto>> GetExercisesAsync(
@@ -197,6 +200,7 @@ public sealed class WorkoutService
 
         await AuditAsync(userId, AuditAction.Created, "WorkoutSession", session.Id, null, session, now, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (_gamification is not null) await _gamification.RefreshAsync(userId, cancellationToken);
         return await MapSessionAsync(session, cancellationToken);
     }
     public async Task<WorkoutSessionResponseDto> UpdateSessionAsync(string userId, Guid sessionId, UpdateWorkoutSessionRequestDto request, CancellationToken cancellationToken = default)
@@ -215,6 +219,7 @@ public sealed class WorkoutService
         session.UpdatedAt = DateTime.UtcNow;
         await AuditAsync(userId, AuditAction.Updated, "WorkoutSession", session.Id, previous, session, session.UpdatedAt, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (_gamification is not null) await _gamification.RefreshAsync(userId, cancellationToken);
         return await MapSessionAsync(session, cancellationToken);
     }
     public async Task<WorkoutSessionResponseDto> CompleteSessionAsync(string userId, Guid sessionId, CancellationToken cancellationToken = default)
@@ -239,6 +244,7 @@ public sealed class WorkoutService
         await RecalculateBadgesAsync(userId, now, cancellationToken);
         await AuditAsync(userId, AuditAction.Updated, "WorkoutSession", session.Id, null, session, now, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (_gamification is not null) await _gamification.RefreshAsync(userId, cancellationToken);
         return await MapSessionAsync(session, cancellationToken);
     }
     public async Task CancelSessionAsync(string userId, Guid sessionId, CancellationToken cancellationToken = default)
@@ -257,6 +263,7 @@ public sealed class WorkoutService
         await RecalculateBadgesAsync(userId, now, cancellationToken);
         await AuditAsync(userId, AuditAction.Updated, "WorkoutSession", session.Id, null, session, now, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (_gamification is not null) await _gamification.RefreshAsync(userId, cancellationToken);
     }
     public async Task DeleteSessionAsync(string userId, Guid sessionId, CancellationToken cancellationToken = default)
     {
@@ -268,6 +275,7 @@ public sealed class WorkoutService
         await RecalculateBadgesAsync(userId, now, cancellationToken);
         await AuditAsync(userId, AuditAction.Deleted, "WorkoutSession", session.Id, session, null, now, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (_gamification is not null) await _gamification.RefreshAsync(userId, cancellationToken);
     }
     public async Task<ExerciseProgressResponseDto> GetExerciseProgressAsync(string userId, Guid exerciseId, CancellationToken cancellationToken = default)
     {

@@ -14,15 +14,18 @@ public sealed class HabitService
     private readonly IHabitRepository _habits;
     private readonly IAuditLogRepository _auditLogs;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly GamificationService? _gamification;
 
     public HabitService(
         IHabitRepository habits,
         IAuditLogRepository auditLogs,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        GamificationService? gamification = null)
     {
         _habits = habits;
         _auditLogs = auditLogs;
         _unitOfWork = unitOfWork;
+        _gamification = gamification;
     }
 
     public async Task<PagedHabitResponseDto> GetHabitsAsync(
@@ -153,6 +156,7 @@ public sealed class HabitService
         await RecalculateHabitBadgesAsync(userId, now, cancellationToken);
         await AuditAsync(userId, AuditAction.Created, "HabitCompletion", completion.Id, null, completion, now, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (_gamification is not null) await _gamification.RefreshAsync(userId, cancellationToken);
         return MapCompletion(completion);
     }
 
@@ -170,6 +174,7 @@ public sealed class HabitService
         await RecalculateHabitBadgesAsync(userId, now, cancellationToken);
         await AuditAsync(userId, AuditAction.Deleted, "HabitCompletion", completion.Id, completion, null, now, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (_gamification is not null) await _gamification.RefreshAsync(userId, cancellationToken);
     }
 
     public async Task<HabitProgressResponseDto> GetProgressAsync(string userId, Guid habitId, DateOnly date, CancellationToken cancellationToken = default)
@@ -195,6 +200,19 @@ public sealed class HabitService
             if (!progress.IsCompleted) result.Add(progress);
         }
         return result;
+    }
+
+    public async Task<IReadOnlyCollection<HabitReminderResponseDto>> GetRemindersAsync(string userId, DateOnly date, CancellationToken cancellationToken = default)
+    {
+        var pending = await GetPendingHabitsAsync(userId, date, cancellationToken);
+        var habits = await _habits.GetHabitsAsync(userId, cancellationToken);
+        return pending.Select(x => new HabitReminderResponseDto
+        {
+            HabitId = x.HabitId,
+            Title = habits.First(y => y.Id == x.HabitId).Title,
+            CompletionCount = x.CompletionCount,
+            TargetCount = x.TargetCount
+        }).ToArray();
     }
 
     private async Task SetStatusAsync(string userId, Guid habitId, HabitStatus status, AuditAction action, CancellationToken cancellationToken)

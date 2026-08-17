@@ -59,7 +59,7 @@ internal static class LifeOsModelConfiguration
         modelBuilder.Entity<FinancialCategory>()
             .HasIndex(x => new { x.UserId, x.Name, x.Type })
             .IsUnique();
-        modelBuilder.Entity<CategoryBudget>().HasIndex(x => x.CategoryId).IsUnique();
+        modelBuilder.Entity<CategoryBudget>().HasIndex(x => new { x.CategoryId, x.EffectiveFrom }).IsUnique();
         modelBuilder.Entity<CategoryBudgetOverride>()
             .HasIndex(x => new { x.CategoryBudgetId, x.Month })
             .IsUnique();

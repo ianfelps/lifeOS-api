@@ -1,4 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
@@ -18,6 +20,10 @@ using ServiceLifeOS.Infrastructure.Options;
 using ServiceLifeOS.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
+var meter = new Meter("ServiceLifeOS.Api");
+var requestDuration = meter.CreateHistogram<double>("http.server.request.duration", unit: "ms");
+var requestCount = meter.CreateCounter<long>("http.server.request.count");
+var errorCount = meter.CreateCounter<long>("http.server.error.count");
 
 JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
 
@@ -53,6 +59,7 @@ builder.Services.AddScoped<ICurrentUser, CurrentUserService>();
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.AddSingleton(bootstrapUserOptions);
+builder.Services.AddSingleton(builder.Configuration.GetSection("PasswordPolicy").Get<PasswordPolicyOptions>() ?? new PasswordPolicyOptions());
 
 if (jwtOptions is null)
 {
@@ -231,6 +238,7 @@ app.Use(async (context, next) =>
 
 app.Use(async (context, next) =>
 {
+    var startedAt = Stopwatch.GetTimestamp();
     try
     {
         await next(context);
@@ -246,6 +254,19 @@ app.Use(async (context, next) =>
     catch (InvalidOperationException exception)
     {
         await WriteErrorAsync(context, StatusCodes.Status409Conflict, exception.Message);
+    }
+    catch (Exception exception)
+    {
+        context.RequestServices.GetRequiredService<ILoggerFactory>()
+            .CreateLogger("UnhandledException")
+            .LogError(exception, "Unhandled request failure for {Method} {Path}.", context.Request.Method, context.Request.Path);
+        errorCount.Add(1);
+        await WriteErrorAsync(context, StatusCodes.Status500InternalServerError, "An unexpected error occurred.");
+    }
+    finally
+    {
+        requestCount.Add(1);
+        requestDuration.Record(Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds);
     }
 });
 

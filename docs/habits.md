@@ -48,6 +48,7 @@ Os tipos de agenda sao `Daily`, `Weekdays`, `WeeklyCount` e `DailyCount`. `Daily
 | DELETE | `/habits/{habitId}/completions/{completionId}` | Corrige conclusao por exclusao logica |
 | GET | `/habits/{habitId}/progress?date=2026-08-12` | Consulta periodo, progresso e ofensiva |
 | GET | `/habits/pending?date=2026-08-12` | Lista habitos pendentes no dia |
+| GET | `/habits/reminders?date=2026-08-12` | Lista pendencias com titulo e progresso para lembretes na interface |
 
 Exemplo de conclusao:
 
