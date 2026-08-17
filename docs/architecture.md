@@ -24,6 +24,7 @@ Ports principais:
 - `IUserRepository`
 - `IPasswordHasher`
 - `IFinanceRepository`
+- `IGamificationRepository`
 
 ## Infrastructure
 
@@ -44,6 +45,7 @@ Implementa adapters de entrada:
 - `FinancesController`
 - `HabitsController`
 - `WorkoutsController`
+- `GamificationController`
 
 Controllers convertem HTTP para chamadas de Application. Regras de negocio devem ficar em Domain/Application, nao nos controllers.
 

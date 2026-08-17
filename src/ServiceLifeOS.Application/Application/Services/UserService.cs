@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ServiceLifeOS.Application.Ports;
+using ServiceLifeOS.Application.Options;
 using ServiceLifeOS.Domain.Entities;
 using ServiceLifeOS.Dtos.Users;
 
@@ -13,6 +14,7 @@ public sealed class UserService
     private readonly IAuditLogRepository _auditLogs;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly PasswordPolicyOptions _passwordPolicy;
 
     public UserService(
         IUserRepository users,
@@ -20,7 +22,8 @@ public sealed class UserService
         IUserSessionRepository sessions,
         IAuditLogRepository auditLogs,
         IPasswordHasher passwordHasher,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        PasswordPolicyOptions? passwordPolicy = null)
     {
         _users = users;
         _preferences = preferences;
@@ -28,6 +31,7 @@ public sealed class UserService
         _auditLogs = auditLogs;
         _passwordHasher = passwordHasher;
         _unitOfWork = unitOfWork;
+        _passwordPolicy = passwordPolicy ?? new PasswordPolicyOptions();
     }
 
     public async Task ChangePasswordAsync(
@@ -40,6 +44,10 @@ public sealed class UserService
             string.IsNullOrWhiteSpace(request.NewPassword))
         {
             throw new ArgumentException("Current and new passwords are required.");
+        }
+        if (request.NewPassword.Length < _passwordPolicy.MinimumLength)
+        {
+            throw new ArgumentException("New password does not meet the minimum length.");
         }
 
         var user = await _users.GetActiveByIdAsync(userId, cancellationToken)

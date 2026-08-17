@@ -10,15 +10,18 @@ public sealed class FinanceService
     private readonly IFinanceRepository _finances;
     private readonly IAuditLogRepository _auditLogs;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly GamificationService? _gamification;
 
     public FinanceService(
         IFinanceRepository finances,
         IAuditLogRepository auditLogs,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        GamificationService? gamification = null)
     {
         _finances = finances;
         _auditLogs = auditLogs;
         _unitOfWork = unitOfWork;
+        _gamification = gamification;
     }
 
     public async Task<IReadOnlyCollection<FinancialCategoryResponseDto>> GetCategoriesAsync(
@@ -116,7 +119,9 @@ public sealed class FinanceService
         CancellationToken cancellationToken = default)
     {
         await RequiredCategoryAsync(userId, categoryId, cancellationToken);
-        var budget = await _finances.GetBudgetAsync(categoryId, cancellationToken);
+        var budget = SelectBudgetForMonth(
+            await _finances.GetBudgetsAsync([categoryId], cancellationToken),
+            FirstDayOfMonth(month ?? LocalToday()));
         if (budget is null)
         {
             return null;
@@ -146,13 +151,17 @@ public sealed class FinanceService
             throw new ArgumentException("Budgets are only available for expense categories.");
         }
         var now = DateTime.UtcNow;
-        var budget = await _finances.GetBudgetAsync(categoryId, cancellationToken);
-        if (budget is null)
+        var effectiveFrom = FirstDayOfMonth(LocalToday());
+        var budget = SelectBudgetForMonth(
+            await _finances.GetBudgetsAsync([categoryId], cancellationToken),
+            effectiveFrom);
+        if (budget is null || budget.EffectiveFrom != effectiveFrom)
         {
             budget = new()
             {
                 CategoryId = categoryId,
                 Amount = request.Amount,
+                EffectiveFrom = effectiveFrom,
                 CreatedAt = now,
                 UpdatedAt = now
             };
@@ -175,6 +184,7 @@ public sealed class FinanceService
                 cancellationToken);
         }
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (_gamification is not null) await _gamification.RefreshAsync(userId, cancellationToken);
         return new()
         {
             CategoryId = categoryId,
@@ -202,6 +212,7 @@ public sealed class FinanceService
             await AuditAsync(userId, AuditAction.Updated, "CategoryBudgetOverride", overrideValue.Id, null, overrideValue, now, cancellationToken);
         }
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (_gamification is not null) await _gamification.RefreshAsync(userId, cancellationToken);
         return new() { CategoryId = categoryId, Amount = overrideValue.Amount, OverrideMonth = normalizedMonth };
     }
 
@@ -214,6 +225,7 @@ public sealed class FinanceService
         await _finances.RemoveAsync(overrideValue, cancellationToken);
         await AuditAsync(userId, AuditAction.Deleted, "CategoryBudgetOverride", overrideValue.Id, overrideValue, null, DateTime.UtcNow, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (_gamification is not null) await _gamification.RefreshAsync(userId, cancellationToken);
     }
 
     public async Task<TransactionResponseDto> CreateTransactionAsync(string userId, TransactionRequestDto request, CancellationToken cancellationToken = default)
@@ -226,6 +238,7 @@ public sealed class FinanceService
         await SyncTransactionXpAsync(transaction, now, cancellationToken);
         await AuditAsync(userId, AuditAction.Created, "FinancialTransaction", transaction.Id, null, transaction, now, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (_gamification is not null) await _gamification.RefreshAsync(userId, cancellationToken);
         return MapTransaction(transaction);
     }
 
@@ -250,6 +263,7 @@ public sealed class FinanceService
         await SyncTransactionXpAsync(transaction, transaction.UpdatedAt, cancellationToken);
         await AuditAsync(userId, AuditAction.Updated, "FinancialTransaction", transaction.Id, previous, transaction, transaction.UpdatedAt, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (_gamification is not null) await _gamification.RefreshAsync(userId, cancellationToken);
         return MapTransaction(transaction);
     }
 
@@ -261,6 +275,7 @@ public sealed class FinanceService
         await SyncTransactionXpAsync(transaction, transaction.UpdatedAt, cancellationToken);
         await AuditAsync(userId, AuditAction.Updated, "FinancialTransaction", transaction.Id, null, transaction, transaction.UpdatedAt, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (_gamification is not null) await _gamification.RefreshAsync(userId, cancellationToken);
         return MapTransaction(transaction);
     }
 
@@ -276,6 +291,7 @@ public sealed class FinanceService
         await SyncTransactionXpAsync(transaction, transaction.UpdatedAt, cancellationToken);
         await AuditAsync(userId, AuditAction.Deleted, "FinancialTransaction", transaction.Id, null, transaction, transaction.UpdatedAt, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (_gamification is not null) await _gamification.RefreshAsync(userId, cancellationToken);
     }
 
     public async Task<PagedTransactionResponseDto> GetTransactionsAsync(string userId, TransactionQueryDto query, CancellationToken cancellationToken = default)
@@ -360,6 +376,7 @@ public sealed class FinanceService
         foreach (var installment in installments) await SyncTransactionXpAsync(installment, now, cancellationToken);
         await AuditAsync(userId, AuditAction.Created, "InstallmentPurchase", purchase.Id, null, purchase, now, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (_gamification is not null) await _gamification.RefreshAsync(userId, cancellationToken);
         return MapPurchase(purchase, installments);
     }
 
@@ -394,6 +411,7 @@ public sealed class FinanceService
         foreach (var installment in replacement) await SyncTransactionXpAsync(installment, now, cancellationToken);
         await AuditAsync(userId, AuditAction.Updated, "InstallmentPurchase", purchase.Id, null, purchase, now, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (_gamification is not null) await _gamification.RefreshAsync(userId, cancellationToken);
         return MapPurchase(purchase, confirmed.Concat(replacement));
     }
 
@@ -439,7 +457,7 @@ public sealed class FinanceService
         var transactions = await _finances.GetTransactionsAsync(userId, cancellationToken);
         return categories.Select(category =>
         {
-            var budget = budgets.FirstOrDefault(x => x.CategoryId == category.Id);
+            var budget = SelectBudgetForMonth(budgets.Where(x => x.CategoryId == category.Id), normalizedMonth);
             decimal? amount = budget is null ? null : overrides.FirstOrDefault(x => x.CategoryBudgetId == budget.Id)?.Amount ?? budget.Amount;
             var spent = transactions.Where(x => x.DeletedAt is null && x.Status == TransactionStatus.Confirmed && x.Type == FinancialCategoryType.Expense && x.CategoryId == category.Id && FirstDayOfMonth(x.TransactionDate) == normalizedMonth).Sum(x => x.Amount);
             decimal? percentage = amount.HasValue ? spent / amount.Value * 100 : null;
@@ -566,6 +584,7 @@ public sealed class FinanceService
         var firstAmount = installmentTotal - baseAmount * (installmentCount - 1);
         return Enumerable.Range(0, installmentCount).Select(index => new FinancialTransaction { UserId = userId, CategoryId = purchase.CategoryId, InstallmentPurchaseId = purchase.Id, Amount = index == 0 ? firstAmount : baseAmount, TransactionDate = firstDate.AddMonths(index), Type = FinancialCategoryType.Expense, PaymentMethod = PaymentMethod.InstallmentCredit, Status = status, InstallmentNumber = firstNumber + index, Description = purchase.Description, CreatedAt = now, UpdatedAt = now }).ToArray();
     }
+    private static CategoryBudget? SelectBudgetForMonth(IEnumerable<CategoryBudget> budgets, DateOnly month) => budgets.Where(x => x.EffectiveFrom <= month).OrderByDescending(x => x.EffectiveFrom).FirstOrDefault();
     private static MonthlySummaryResponseDto BuildMonthlySummary(DateOnly month, IEnumerable<FinancialTransaction> transactions)
     {
         var values = transactions.ToArray();

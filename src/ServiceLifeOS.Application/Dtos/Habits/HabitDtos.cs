@@ -92,3 +92,11 @@ public sealed class HabitProgressResponseDto
 
     public int Streak { get; set; }
 }
+
+public sealed class HabitReminderResponseDto
+{
+    public Guid HabitId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public int CompletionCount { get; set; }
+    public int TargetCount { get; set; }
+}

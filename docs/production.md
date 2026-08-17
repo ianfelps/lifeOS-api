@@ -25,6 +25,7 @@ Copie `.env.example` para `.env` somente no ambiente local. O arquivo `.env` e i
 | `RateLimiting__LoginWindowMinutes` | Janela do limite de login. |
 | `RateLimiting__ApiPermitLimit` | Limite global da API por IP. |
 | `RateLimiting__ApiWindowMinutes` | Janela do limite global. |
+| `PasswordPolicy__MinimumLength` | Comprimento minimo da senha, com padrao de 12. |
 
 Na Render, configure os valores privados no Dashboard do servico. Nunca envie um `.env` real ao repositorio.
 

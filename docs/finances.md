@@ -24,7 +24,7 @@ Todas as rotas exigem JWT Bearer e usam o usuario presente no token. Recursos de
 | PUT | `/finances/categories/{categoryId}/budget-overrides/{month}` | Define excecao mensal |
 | DELETE | `/finances/categories/{categoryId}/budget-overrides/{month}` | Remove excecao mensal e restaura o teto recorrente |
 
-Uma categoria precisa estar ativa e ter o mesmo tipo da transacao. Alertas retornados por relatorio sao `None`, `EightyPercent`, `AtLimit` e `Exceeded`; os limites sao, respectivamente, abaixo de 80%, de 80% a menos de 100%, exatamente 100% e acima de 100%.
+Uma categoria precisa estar ativa e ter o mesmo tipo da transacao. Alertas retornados por relatorio sao `None`, `EightyPercent`, `AtLimit` e `Exceeded`; os limites sao, respectivamente, abaixo de 80%, de 80% a menos de 100%, exatamente 100% e acima de 100%. Um teto alterado entra em vigor no primeiro dia do mes atual e preserva as versoes aplicaveis aos meses anteriores.
 
 ## Transacoes
 

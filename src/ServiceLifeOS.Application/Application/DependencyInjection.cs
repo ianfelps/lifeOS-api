@@ -13,6 +13,8 @@ public static class DependencyInjection
         services.AddScoped<FinanceService>();
         services.AddScoped<HabitService>();
         services.AddScoped<WorkoutService>();
+        services.AddScoped<GamificationService>();
+        services.AddScoped<DashboardService>();
 
         return services;
     }

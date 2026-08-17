@@ -71,7 +71,7 @@ public sealed class FinanceRepository : IFinanceRepository
         CancellationToken cancellationToken = default)
     {
         return _db.CategoryBudgets.FirstOrDefaultAsync(
-            x => x.CategoryId == categoryId,
+            x => x.CategoryId == categoryId && x.EffectiveFrom <= DateOnly.FromDateTime(DateTime.UtcNow),
             cancellationToken);
     }
 

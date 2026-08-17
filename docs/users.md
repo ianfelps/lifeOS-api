@@ -44,7 +44,7 @@ Exemplo de atualizacao:
 }
 ```
 
-A senha atual e obrigatoria e precisa ser valida. A nova senha e validada pela politica configurada no ambiente quando essa politica for disponibilizada pela aplicacao. A senha nunca e registrada em auditoria, logs ou respostas HTTP.
+A senha atual e obrigatoria e precisa ser valida. A nova senha precisa respeitar `PasswordPolicy:MinimumLength`, configurado no ambiente e com padrao de 12 caracteres. A senha nunca e registrada em auditoria, logs ou respostas HTTP.
 
 Ao alterar a senha, a API preserva a sessao do token atual e revoga todas as demais sessoes ainda ativas do usuario.
 
