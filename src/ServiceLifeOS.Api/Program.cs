@@ -8,6 +8,7 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -73,6 +74,11 @@ if (jwtOptions is null)
 if (string.IsNullOrWhiteSpace(jwtOptions.Secret) || jwtOptions.Secret.Length < 32)
 {
     throw new InvalidOperationException("Jwt:Secret must have at least 32 characters.");
+}
+
+if (jwtOptions.AccessTokenExpirationMinutes <= 0 || jwtOptions.RefreshTokenExpirationDays <= 0)
+{
+    throw new InvalidOperationException("Jwt token expiration settings must be greater than zero.");
 }
 
 builder.Services
@@ -290,7 +296,7 @@ app.UseAuthorization();
 app.UseRateLimiter();
 
 app.MapControllers();
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health", new HealthCheckOptions { AllowCachingResponses = false });
 
 using (var scope = app.Services.CreateScope())
 {

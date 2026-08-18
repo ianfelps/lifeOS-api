@@ -49,7 +49,8 @@ Esse comando usa o alvo `migrations` do `Dockerfile`, que contem o SDK e `dotnet
 
 ## Runtime
 
-- `GET /health` e publico e nao testa o banco; configure este caminho como health check da Render.
+- `GET /health` e publico, nao testa o banco e responde sem cache; o `render.yaml` ja o configura como health check.
+- O container escuta `PORT` fornecida pela Render, com fallback em `8080`; nao defina uma porta fixa no Dashboard.
 - OpenAPI (`/openapi/v1.json`) e Scalar (`/scalar`) ficam disponiveis apenas em desenvolvimento.
 - CORS aceita somente as origens configuradas em `Cors__AllowedOrigins`.
 - Login aceita 10 requisicoes por IP a cada 15 minutos.
