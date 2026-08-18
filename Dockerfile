@@ -15,6 +15,7 @@ CMD ["dotnet", "ef", "database", "update", "--project", "src/ServiceLifeOS.Infra
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
-ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_URLS=http://+:8080 \
+    DOTNET_HOSTBUILDER__RELOADCONFIGONCHANGE=false
 EXPOSE 8080
 CMD ["sh", "-c", "dotnet ServiceLifeOS.Api.dll --urls http://0.0.0.0:${PORT:-8080}"]
