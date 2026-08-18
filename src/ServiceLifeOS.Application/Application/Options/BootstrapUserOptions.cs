@@ -2,11 +2,11 @@ namespace ServiceLifeOS.Application.Options;
 
 public sealed class BootstrapUserOptions
 {
-    public string UserId { get; set; } = "demo-user";
+    public string UserId { get; set; } = string.Empty;
 
-    public string UserName { get; set; } = "demo";
+    public string UserName { get; set; } = string.Empty;
 
-    public string DisplayName { get; set; } = "Demo User";
+    public string DisplayName { get; set; } = string.Empty;
 
-    public string Password { get; set; } = "demo123";
+    public string Password { get; set; } = string.Empty;
 }

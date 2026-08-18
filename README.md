@@ -112,7 +112,7 @@ Não versione `.env`, connection strings, segredos JWT ou credenciais reais.
 ## Configuração
 
 1. Copie `.env.example` para `.env`.
-2. Configure conexão, JWT, usuário provisionado, CORS, rate limiting e política de senha.
+2. Configure conexão, JWT, usuário provisionado, CORS, rate limiting e política de senha. Os valores de demonstração existem somente em `appsettings.Development.json`.
 3. Suba somente a infraestrutura definida em `docker-compose.dev.yml`.
 4. Execute a API pelo perfil de desenvolvimento do projeto.
 
