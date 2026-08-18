@@ -16,6 +16,8 @@ Copie `.env.example` para `.env` somente no ambiente local. O arquivo `.env` e i
 | `Jwt__Issuer` | Emissor do JWT. |
 | `Jwt__Audience` | Audiencia do JWT. |
 | `Jwt__Secret` | Segredo com no minimo 32 caracteres. |
+| `Jwt__AccessTokenExpirationMinutes` | Validade do access token, com padrao de 15 minutos. |
+| `Jwt__RefreshTokenExpirationDays` | Validade do refresh token rotativo, com padrao de 30 dias. |
 | `BootstrapUser__UserId` | Identificador estavel da conta unica. |
 | `BootstrapUser__UserName` | Nome de usuario inicial. |
 | `BootstrapUser__DisplayName` | Nome exibido. |
@@ -25,6 +27,8 @@ Copie `.env.example` para `.env` somente no ambiente local. O arquivo `.env` e i
 | `RateLimiting__LoginWindowMinutes` | Janela do limite de login. |
 | `RateLimiting__ApiPermitLimit` | Limite global da API por IP. |
 | `RateLimiting__ApiWindowMinutes` | Janela do limite global. |
+| `RateLimiting__RefreshPermitLimit` | Limite de renovacoes de sessao por IP. |
+| `RateLimiting__RefreshWindowMinutes` | Janela do limite de renovacoes por IP. |
 | `PasswordPolicy__MinimumLength` | Comprimento minimo da senha, com padrao de 12. |
 
 Na Render, configure os valores privados no Dashboard do servico. Nunca envie um `.env` real ao repositorio.

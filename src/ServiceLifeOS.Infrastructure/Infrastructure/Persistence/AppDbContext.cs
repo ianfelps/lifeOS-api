@@ -16,6 +16,7 @@ public sealed class AppDbContext : DbContext, IUnitOfWork
     public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<UserPreference> UserPreferences => Set<UserPreference>();
     public DbSet<UserSession> UserSessions => Set<UserSession>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<FinancialCategory> FinancialCategories => Set<FinancialCategory>();
     public DbSet<CategoryBudget> CategoryBudgets => Set<CategoryBudget>();

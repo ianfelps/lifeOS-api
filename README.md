@@ -78,7 +78,7 @@ Todas as rotas, exceto `GET /health` e `POST /auth/login`, exigem um token JWT B
 
 | Area | Rotas principais | Documento |
 | --- | --- | --- |
-| Autenticação | `POST /auth/login`, `GET /auth/me` | Código e OpenAPI |
+| Autenticação | `POST /auth/login`, `POST /auth/refresh`, `GET /auth/me` | Código e OpenAPI |
 | Dashboard | `GET /dashboard` | [`docs/user-flows.md`](docs/user-flows.md) |
 | Usuário | `/users/me/preferences`, `/users/me/password`, `/users/me/sessions/others` | [`docs/users.md`](docs/users.md) |
 | Operações | `GET /operations/audit-logs` | Código e OpenAPI |
@@ -122,9 +122,11 @@ Variaveis relevantes:
 
 - `ConnectionStrings__DefaultConnection`
 - `Jwt__Issuer`, `Jwt__Audience`, `Jwt__Secret`
+- `Jwt__AccessTokenExpirationMinutes`, `Jwt__RefreshTokenExpirationDays`
 - `BootstrapUser__UserId`, `BootstrapUser__UserName`, `BootstrapUser__DisplayName`, `BootstrapUser__Password`
 - `Cors__AllowedOrigins__0`
 - `RateLimiting__LoginPermitLimit`, `RateLimiting__LoginWindowMinutes`
+- `RateLimiting__RefreshPermitLimit`, `RateLimiting__RefreshWindowMinutes`
 - `RateLimiting__ApiPermitLimit`, `RateLimiting__ApiWindowMinutes`
 - `PasswordPolicy__MinimumLength`
 

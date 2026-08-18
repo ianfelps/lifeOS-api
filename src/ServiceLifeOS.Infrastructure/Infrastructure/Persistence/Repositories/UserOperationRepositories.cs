@@ -30,9 +30,13 @@ public sealed class UserSessionRepository : IUserSessionRepository
         _db = db;
     }
 
-    public Task CreateAsync(UserSession session, CancellationToken cancellationToken = default)
+    public Task CreateAsync(
+        UserSession session,
+        RefreshToken refreshToken,
+        CancellationToken cancellationToken = default)
     {
         _db.UserSessions.Add(session);
+        _db.RefreshTokens.Add(refreshToken);
         return Task.CompletedTask;
     }
 
@@ -62,17 +66,83 @@ public sealed class UserSessionRepository : IUserSessionRepository
                 cancellationToken);
     }
 
-    public Task<int> RevokeOtherActiveSessionsAsync(
+    public async Task<int> RevokeOtherActiveSessionsAsync(
         string userId,
         string currentTokenId,
         DateTime now,
         CancellationToken cancellationToken = default)
     {
-        return _db.UserSessions
+        var sessionIds = await _db.UserSessions
             .Where(x => x.UserId == userId &&
                 x.TokenId != currentTokenId &&
                 x.RevokedAt == null &&
                 x.ExpiresAt > now)
+            .Select(x => x.Id)
+            .ToArrayAsync(cancellationToken);
+        if (sessionIds.Length == 0)
+        {
+            return 0;
+        }
+
+        await _db.UserSessions
+            .Where(x => sessionIds.Contains(x.Id))
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(x => x.RevokedAt, now),
+            cancellationToken);
+        await _db.RefreshTokens
+            .Where(x => sessionIds.Contains(x.UserSessionId) && x.RevokedAt == null)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(x => x.RevokedAt, now),
+                cancellationToken);
+        return sessionIds.Length;
+    }
+
+    public async Task<RefreshTokenSession?> GetRefreshTokenSessionAsync(
+        string refreshTokenHash,
+        CancellationToken cancellationToken = default)
+    {
+        return await _db.RefreshTokens
+            .Where(x => x.TokenHash == refreshTokenHash)
+            .Join(
+                _db.UserSessions,
+                refreshToken => refreshToken.UserSessionId,
+                session => session.Id,
+                (refreshToken, session) => new RefreshTokenSession
+                {
+                    RefreshToken = refreshToken,
+                    Session = session
+                })
+            .SingleOrDefaultAsync(cancellationToken);
+    }
+
+    public Task RotateRefreshTokenAsync(
+        RefreshTokenSession current,
+        string accessTokenId,
+        RefreshToken replacement,
+        DateTime now,
+        CancellationToken cancellationToken = default)
+    {
+        current.RefreshToken.UsedAt = now;
+        current.RefreshToken.ReplacedByRefreshTokenId = replacement.Id;
+        current.Session.TokenId = accessTokenId;
+        current.Session.ExpiresAt = replacement.ExpiresAt;
+        current.Session.LastUsedAt = now;
+        _db.RefreshTokens.Add(replacement);
+        return Task.CompletedTask;
+    }
+
+    public async Task RevokeSessionAsync(
+        Guid sessionId,
+        DateTime now,
+        CancellationToken cancellationToken = default)
+    {
+        await _db.UserSessions
+            .Where(x => x.Id == sessionId && x.RevokedAt == null)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(x => x.RevokedAt, now),
+                cancellationToken);
+        await _db.RefreshTokens
+            .Where(x => x.UserSessionId == sessionId && x.RevokedAt == null)
             .ExecuteUpdateAsync(
                 setters => setters.SetProperty(x => x.RevokedAt, now),
                 cancellationToken);

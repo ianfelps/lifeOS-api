@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -53,7 +54,10 @@ if (builder.Environment.IsProduction())
     }
 }
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
+});
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, CurrentUserService>();
 
@@ -149,6 +153,8 @@ var loginPermitLimit = builder.Configuration.GetValue("RateLimiting:LoginPermitL
 var loginWindowMinutes = builder.Configuration.GetValue("RateLimiting:LoginWindowMinutes", 15);
 var apiPermitLimit = builder.Configuration.GetValue("RateLimiting:ApiPermitLimit", 300);
 var apiWindowMinutes = builder.Configuration.GetValue("RateLimiting:ApiWindowMinutes", 1);
+var refreshPermitLimit = builder.Configuration.GetValue("RateLimiting:RefreshPermitLimit", 30);
+var refreshWindowMinutes = builder.Configuration.GetValue("RateLimiting:RefreshWindowMinutes", 1);
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -167,6 +173,13 @@ builder.Services.AddRateLimiter(options =>
     {
         limiterOptions.PermitLimit = loginPermitLimit;
         limiterOptions.Window = TimeSpan.FromMinutes(loginWindowMinutes);
+        limiterOptions.QueueLimit = 0;
+        limiterOptions.AutoReplenishment = true;
+    });
+    options.AddFixedWindowLimiter("refresh", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = refreshPermitLimit;
+        limiterOptions.Window = TimeSpan.FromMinutes(refreshWindowMinutes);
         limiterOptions.QueueLimit = 0;
         limiterOptions.AutoReplenishment = true;
     });

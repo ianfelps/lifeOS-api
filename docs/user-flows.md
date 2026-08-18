@@ -17,14 +17,21 @@ Este guia descreve as jornadas principais da API. Ele complementa os contratos d
 
 1. O usuario informa `userName` e `password` em `POST /auth/login`.
 2. A API valida as credenciais e cria uma sessao persistida.
-3. O frontend recebe `accessToken`, `expiresAt` e os dados basicos do usuario.
-4. O frontend armazena o token de forma segura e o envia nas requisicoes seguintes.
+3. O frontend recebe `accessToken`, `refreshToken`, `expiresAt` e os dados basicos do usuario.
+4. O frontend armazena os tokens de forma segura e envia o access token nas requisicoes seguintes.
+
+### Renovar sessao
+
+1. Quando o access token expira, o frontend envia `refreshToken` para `POST /auth/refresh`.
+2. A API valida a sessao, rotaciona o refresh token e retorna um novo par de tokens.
+3. Um refresh token usado novamente revoga a sessao associada para impedir replay.
+4. Falha `401` encerra a sessao local e retorna o usuario ao login.
 
 ### Restaurar sessao
 
 1. Ao abrir a aplicacao, o frontend chama `GET /auth/me` com o token salvo.
 2. A API valida token, usuario e sessao ativa.
-3. A resposta confirma a identidade; falha `401` significa que o frontend deve encerrar a sessao local e voltar ao login.
+3. A resposta confirma a identidade; falha `401` significa que o frontend deve tentar renovar a sessao uma vez e, se falhar, encerrar a sessao local e voltar ao login.
 
 ## 2. Dashboard
 

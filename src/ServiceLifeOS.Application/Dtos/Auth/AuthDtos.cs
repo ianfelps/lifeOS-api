@@ -11,7 +11,16 @@ public sealed class AuthResponseDto
 {
     public string AccessToken { get; set; } = string.Empty;
 
+    public string RefreshToken { get; set; } = string.Empty;
+
+    public DateTime ExpiresAt { get; set; }
+
     public MeResponseDto User { get; set; } = new();
+}
+
+public sealed class RefreshTokenRequestDto
+{
+    public string? RefreshToken { get; set; }
 }
 
 public sealed class MeResponseDto

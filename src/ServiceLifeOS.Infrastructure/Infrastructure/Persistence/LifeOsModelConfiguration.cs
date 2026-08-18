@@ -9,6 +9,7 @@ internal static class LifeOsModelConfiguration
     {
         Configure(modelBuilder.Entity<UserPreference>(), "user_preferences", x => x.UserId);
         Configure(modelBuilder.Entity<UserSession>(), "user_sessions", x => x.UserId);
+        Configure(modelBuilder.Entity<RefreshToken>(), "refresh_tokens", x => x.UserSessionId);
         Configure(modelBuilder.Entity<AuditLog>(), "audit_logs", x => x.UserId);
         Configure(modelBuilder.Entity<FinancialCategory>(), "financial_categories", x => x.UserId);
         Configure(modelBuilder.Entity<CategoryBudget>(), "category_budgets", x => x.CategoryId);
@@ -56,6 +57,7 @@ internal static class LifeOsModelConfiguration
 
         modelBuilder.Entity<UserPreference>().HasIndex(x => x.UserId).IsUnique();
         modelBuilder.Entity<UserSession>().HasIndex(x => x.TokenId).IsUnique();
+        modelBuilder.Entity<RefreshToken>().HasIndex(x => x.TokenHash).IsUnique();
         modelBuilder.Entity<FinancialCategory>()
             .HasIndex(x => new { x.UserId, x.Name, x.Type })
             .IsUnique();
@@ -87,6 +89,8 @@ internal static class LifeOsModelConfiguration
             .HasOne<AppUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<UserSession>()
             .HasOne<AppUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<RefreshToken>()
+            .HasOne<UserSession>().WithMany().HasForeignKey(x => x.UserSessionId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<AuditLog>()
             .HasOne<AppUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.SetNull);
         modelBuilder.Entity<FinancialCategory>()

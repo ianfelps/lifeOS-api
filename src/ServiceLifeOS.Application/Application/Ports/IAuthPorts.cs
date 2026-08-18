@@ -38,6 +38,10 @@ public interface IPasswordHasher
 public interface ITokenService
 {
     AccessTokenData CreateAccessToken(string userId, string userName, string displayName);
+
+    RefreshTokenData CreateRefreshToken();
+
+    string HashRefreshToken(string refreshToken);
 }
 
 public sealed class AccessTokenData
@@ -45,6 +49,15 @@ public sealed class AccessTokenData
     public string Value { get; init; } = string.Empty;
 
     public string TokenId { get; init; } = string.Empty;
+
+    public DateTime ExpiresAt { get; init; }
+}
+
+public sealed class RefreshTokenData
+{
+    public string Value { get; init; } = string.Empty;
+
+    public string Hash { get; init; } = string.Empty;
 
     public DateTime ExpiresAt { get; init; }
 }
@@ -58,7 +71,10 @@ public interface IUserPreferenceRepository
 
 public interface IUserSessionRepository
 {
-    Task CreateAsync(UserSession session, CancellationToken cancellationToken = default);
+    Task CreateAsync(
+        UserSession session,
+        RefreshToken refreshToken,
+        CancellationToken cancellationToken = default);
 
     Task<bool> IsActiveAsync(
         string userId,
@@ -76,6 +92,29 @@ public interface IUserSessionRepository
         string currentTokenId,
         DateTime now,
         CancellationToken cancellationToken = default);
+
+    Task<RefreshTokenSession?> GetRefreshTokenSessionAsync(
+        string refreshTokenHash,
+        CancellationToken cancellationToken = default);
+
+    Task RotateRefreshTokenAsync(
+        RefreshTokenSession current,
+        string accessTokenId,
+        RefreshToken replacement,
+        DateTime now,
+        CancellationToken cancellationToken = default);
+
+    Task RevokeSessionAsync(
+        Guid sessionId,
+        DateTime now,
+        CancellationToken cancellationToken = default);
+}
+
+public sealed class RefreshTokenSession
+{
+    public UserSession Session { get; init; } = new();
+
+    public RefreshToken RefreshToken { get; init; } = new();
 }
 
 public interface IAuditLogRepository
