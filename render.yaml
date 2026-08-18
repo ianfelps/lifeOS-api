@@ -40,11 +40,3 @@ services:
         sync: false
       - key: Jwt__Secret
         sync: false
-      - key: BootstrapUser__UserId
-        sync: false
-      - key: BootstrapUser__UserName
-        sync: false
-      - key: BootstrapUser__DisplayName
-        sync: false
-      - key: BootstrapUser__Password
-        sync: false

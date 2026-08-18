@@ -1,0 +1,7 @@
+services:
+  bootstrap:
+    build:
+      context: .
+      target: bootstrap
+    env_file:
+      - ${ENV_FILE:-.env}

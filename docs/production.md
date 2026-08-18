@@ -31,7 +31,7 @@ Copie `.env.example` para `.env` somente no ambiente local. O arquivo `.env` e i
 | `RateLimiting__RefreshWindowMinutes` | Janela do limite de renovacoes por IP. |
 | `PasswordPolicy__MinimumLength` | Comprimento minimo da senha, com padrao de 12. |
 
-Na Render, configure todos os valores com `sync: false` no Dashboard do servico antes do primeiro deploy. A API recusa iniciar em producao quando connection string, JWT ou dados de `BootstrapUser` estiverem ausentes; ela nunca usa valores de demonstracao em producao. Nunca envie um `.env` real ao repositorio.
+Na Render, configure todos os valores com `sync: false` no Dashboard do servico antes do primeiro deploy. A API recusa iniciar em producao quando connection string ou JWT estiverem ausentes; ela nunca usa valores de demonstracao em producao. Nunca envie um `.env` real ao repositorio.
 
 ## Bootstrap
 
@@ -46,6 +46,16 @@ docker compose --env-file .env -f docker-compose.migrate.yml run --rm migrations
 ```
 
 Esse comando usa o alvo `migrations` do `Dockerfile`, que contem o SDK e `dotnet ef`. A factory de design-time le `ConnectionStrings__DefaultConnection` do ambiente, portanto o comando usa a mesma conexao configurada no `.env`. A imagem da API publicada usa apenas o runtime .NET e nao executa migrations no startup.
+
+## Bootstrap manual
+
+O deploy normal nunca cria usuarios ou dados iniciais. Depois de aplicar as migrations, crie ou atualize o usuario provisionado de forma manual:
+
+```bash
+docker compose --env-file .env -f docker-compose.bootstrap.yml run --rm bootstrap
+```
+
+O comando exige `BootstrapUser__UserId`, `BootstrapUser__UserName`, `BootstrapUser__DisplayName` e `BootstrapUser__Password` no `.env`. Ele e idempotente: cria o usuario e os dados iniciais ausentes, sem remover registros existentes. O alvo `bootstrap` encerra quando a operacao termina e nao inicia um servidor HTTP.
 
 ## Runtime
 

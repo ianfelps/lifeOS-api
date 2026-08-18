@@ -116,7 +116,7 @@ Não versione `.env`, connection strings, segredos JWT ou credenciais reais.
 3. Suba somente a infraestrutura definida em `docker-compose.dev.yml`.
 4. Execute a API pelo perfil de desenvolvimento do projeto.
 
-Em desenvolvimento, a API aplica migrations pendentes e executa o bootstrap. Em produção, migrations são uma operação manual anterior ao deploy.
+Em desenvolvimento, a API aplica migrations pendentes. A criação do usuário provisionado e dos dados iniciais é uma operação manual, separada da inicialização da API.
 
 Variaveis relevantes:
 

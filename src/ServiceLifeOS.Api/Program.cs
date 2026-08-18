@@ -22,6 +22,8 @@ using ServiceLifeOS.Infrastructure.Options;
 using ServiceLifeOS.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
+var bootstrapRequested = args.Any(argument =>
+    string.Equals(argument, "--bootstrap", StringComparison.Ordinal));
 var meter = new Meter("ServiceLifeOS.Api");
 var requestDuration = meter.CreateHistogram<double>("http.server.request.duration", unit: "ms");
 var requestCount = meter.CreateCounter<long>("http.server.request.count");
@@ -45,11 +47,7 @@ if (builder.Environment.IsProduction())
     if (string.IsNullOrWhiteSpace(connectionString) ||
         allowedOrigins.Length == 0 ||
         string.IsNullOrWhiteSpace(jwtOptions?.Issuer) ||
-        string.IsNullOrWhiteSpace(jwtOptions?.Audience) ||
-        string.IsNullOrWhiteSpace(bootstrapUserOptions.UserId) ||
-        string.IsNullOrWhiteSpace(bootstrapUserOptions.UserName) ||
-        string.IsNullOrWhiteSpace(bootstrapUserOptions.DisplayName) ||
-        string.IsNullOrWhiteSpace(bootstrapUserOptions.Password))
+        string.IsNullOrWhiteSpace(jwtOptions?.Audience))
     {
         throw new InvalidOperationException("Production configuration is incomplete.");
     }
@@ -79,6 +77,15 @@ if (string.IsNullOrWhiteSpace(jwtOptions.Secret) || jwtOptions.Secret.Length < 3
 if (jwtOptions.AccessTokenExpirationMinutes <= 0 || jwtOptions.RefreshTokenExpirationDays <= 0)
 {
     throw new InvalidOperationException("Jwt token expiration settings must be greater than zero.");
+}
+
+if (bootstrapRequested &&
+    (string.IsNullOrWhiteSpace(bootstrapUserOptions.UserId) ||
+     string.IsNullOrWhiteSpace(bootstrapUserOptions.UserName) ||
+     string.IsNullOrWhiteSpace(bootstrapUserOptions.DisplayName) ||
+     string.IsNullOrWhiteSpace(bootstrapUserOptions.Password)))
+{
+    throw new InvalidOperationException("Bootstrap user configuration is incomplete.");
 }
 
 builder.Services
@@ -298,17 +305,21 @@ app.UseRateLimiter();
 app.MapControllers();
 app.MapHealthChecks("/health", new HealthCheckOptions { AllowCachingResponses = false });
 
-using (var scope = app.Services.CreateScope())
+if (app.Environment.IsDevelopment())
 {
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+}
+
+if (bootstrapRequested)
+{
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
 
-    if (app.Environment.IsDevelopment())
-    {
-        await db.Database.MigrateAsync();
-    }
-
     await DbSeeder.SeedAsync(db, bootstrapUserOptions, passwordHasher);
+    return;
 }
 
 app.Run();
