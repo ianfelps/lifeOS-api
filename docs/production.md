@@ -31,7 +31,7 @@ Copie `.env.example` para `.env` somente no ambiente local. O arquivo `.env` e i
 | `RateLimiting__RefreshWindowMinutes` | Janela do limite de renovacoes por IP. |
 | `PasswordPolicy__MinimumLength` | Comprimento minimo da senha, com padrao de 12. |
 
-Na Render, configure os valores privados no Dashboard do servico. Nunca envie um `.env` real ao repositorio.
+Na Render, configure todos os valores com `sync: false` no Dashboard do servico antes do primeiro deploy. A API recusa iniciar em producao quando connection string, JWT ou dados de `BootstrapUser` estiverem ausentes; ela nunca usa valores de demonstracao em producao. Nunca envie um `.env` real ao repositorio.
 
 ## Bootstrap
 
