@@ -7,7 +7,7 @@ namespace ServiceLifeOS.Infrastructure.Persistence;
 
 public static class DbSeeder
 {
-    public static async Task SeedAsync(
+    public static async Task<bool> SeedAsync(
         AppDbContext db,
         BootstrapUserOptions bootstrapUser,
         IPasswordHasher passwordHasher,
@@ -18,6 +18,7 @@ public static class DbSeeder
             x => x.Id == bootstrapUser.UserId,
             cancellationToken);
 
+        var userCreated = user is null;
         if (user is null)
         {
             db.Users.Add(new AppUser
@@ -47,6 +48,7 @@ public static class DbSeeder
         await SeedDefaultsAsync(db, bootstrapUser.UserId, now, cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
+        return userCreated;
     }
 
     private static async Task SeedDefaultsAsync(
