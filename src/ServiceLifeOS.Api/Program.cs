@@ -317,8 +317,13 @@ if (bootstrapRequested)
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
+        .CreateLogger("Bootstrap");
 
-    await DbSeeder.SeedAsync(db, bootstrapUserOptions, passwordHasher);
+    var userCreated = await DbSeeder.SeedAsync(db, bootstrapUserOptions, passwordHasher);
+    logger.LogInformation(
+        "Bootstrap completed. The provisioned user was {BootstrapResult}.",
+        userCreated ? "created" : "updated");
     return;
 }
 

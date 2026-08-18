@@ -55,7 +55,7 @@ O deploy normal nunca cria usuarios ou dados iniciais. Depois de aplicar as migr
 docker compose --env-file .env -f docker-compose.bootstrap.yml run --rm bootstrap
 ```
 
-O comando exige `BootstrapUser__UserId`, `BootstrapUser__UserName`, `BootstrapUser__DisplayName` e `BootstrapUser__Password` no `.env`. Ele e idempotente: cria o usuario e os dados iniciais ausentes, sem remover registros existentes. O alvo `bootstrap` encerra quando a operacao termina e nao inicia um servidor HTTP.
+O comando exige `BootstrapUser__UserId`, `BootstrapUser__UserName`, `BootstrapUser__DisplayName` e `BootstrapUser__Password` no `.env`. Ele e idempotente: cria o usuario e os dados iniciais ausentes, sem remover registros existentes. O log final informa se o usuario foi criado ou atualizado. O alvo `bootstrap` encerra quando a operacao termina e nao inicia um servidor HTTP.
 
 ## Runtime
 
