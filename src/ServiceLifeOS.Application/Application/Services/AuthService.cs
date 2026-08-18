@@ -1,4 +1,5 @@
 using ServiceLifeOS.Application.Ports;
+using ServiceLifeOS.Domain.Entities;
 using ServiceLifeOS.Dtos.Auth;
 
 namespace ServiceLifeOS.Application.Services;
@@ -49,14 +50,25 @@ public sealed class AuthService
             user.Id,
             user.UserName,
             user.DisplayName);
-        await _sessions.CreateAsync(new()
+        var refreshToken = _tokenService.CreateRefreshToken();
+        var session = new UserSession
         {
             UserId = user.Id,
             TokenId = accessToken.TokenId,
             CreatedAt = now,
-            ExpiresAt = accessToken.ExpiresAt,
+            ExpiresAt = refreshToken.ExpiresAt,
             LastUsedAt = now
-        }, cancellationToken);
+        };
+        await _sessions.CreateAsync(
+            session,
+            new RefreshToken
+            {
+                UserSessionId = session.Id,
+                TokenHash = refreshToken.Hash,
+                CreatedAt = now,
+                ExpiresAt = refreshToken.ExpiresAt
+            },
+            cancellationToken);
         await _auditLogs.CreateAsync(new()
         {
             UserId = user.Id,
@@ -69,6 +81,71 @@ public sealed class AuthService
         return new AuthResponseDto
         {
             AccessToken = accessToken.Value,
+            RefreshToken = refreshToken.Value,
+            ExpiresAt = accessToken.ExpiresAt,
+            User = new MeResponseDto
+            {
+                UserId = user.Id,
+                UserName = user.UserName,
+                DisplayName = user.DisplayName
+            }
+        };
+    }
+
+    public async Task<AuthResponseDto> RefreshAsync(
+        RefreshTokenRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.RefreshToken))
+        {
+            throw new UnauthorizedAccessException("Refresh token is required.");
+        }
+
+        var now = DateTime.UtcNow;
+        var current = await _sessions.GetRefreshTokenSessionAsync(
+            _tokenService.HashRefreshToken(request.RefreshToken),
+            cancellationToken);
+        if (current is null)
+        {
+            throw new UnauthorizedAccessException("Refresh token is invalid.");
+        }
+        if (current.RefreshToken.UsedAt.HasValue)
+        {
+            await _sessions.RevokeSessionAsync(current.Session.Id, now, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            throw new UnauthorizedAccessException("Refresh token reuse was detected.");
+        }
+        if (current.RefreshToken.RevokedAt.HasValue ||
+            current.RefreshToken.ExpiresAt <= now ||
+            current.Session.RevokedAt.HasValue ||
+            current.Session.ExpiresAt <= now)
+        {
+            throw new UnauthorizedAccessException("Refresh token is no longer active.");
+        }
+
+        var user = await _users.GetActiveByIdAsync(current.Session.UserId, cancellationToken)
+            ?? throw new UnauthorizedAccessException("Authenticated user was not found.");
+        var accessToken = _tokenService.CreateAccessToken(user.Id, user.UserName, user.DisplayName);
+        var refreshToken = _tokenService.CreateRefreshToken();
+        await _sessions.RotateRefreshTokenAsync(
+            current,
+            accessToken.TokenId,
+            new RefreshToken
+            {
+                UserSessionId = current.Session.Id,
+                TokenHash = refreshToken.Hash,
+                CreatedAt = now,
+                ExpiresAt = refreshToken.ExpiresAt
+            },
+            now,
+            cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return new AuthResponseDto
+        {
+            AccessToken = accessToken.Value,
+            RefreshToken = refreshToken.Value,
+            ExpiresAt = accessToken.ExpiresAt,
             User = new MeResponseDto
             {
                 UserId = user.Id,

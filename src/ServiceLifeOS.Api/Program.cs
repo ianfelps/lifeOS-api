@@ -3,10 +3,12 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -53,7 +55,10 @@ if (builder.Environment.IsProduction())
     }
 }
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
+});
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, CurrentUserService>();
 
@@ -69,6 +74,11 @@ if (jwtOptions is null)
 if (string.IsNullOrWhiteSpace(jwtOptions.Secret) || jwtOptions.Secret.Length < 32)
 {
     throw new InvalidOperationException("Jwt:Secret must have at least 32 characters.");
+}
+
+if (jwtOptions.AccessTokenExpirationMinutes <= 0 || jwtOptions.RefreshTokenExpirationDays <= 0)
+{
+    throw new InvalidOperationException("Jwt token expiration settings must be greater than zero.");
 }
 
 builder.Services
@@ -149,6 +159,8 @@ var loginPermitLimit = builder.Configuration.GetValue("RateLimiting:LoginPermitL
 var loginWindowMinutes = builder.Configuration.GetValue("RateLimiting:LoginWindowMinutes", 15);
 var apiPermitLimit = builder.Configuration.GetValue("RateLimiting:ApiPermitLimit", 300);
 var apiWindowMinutes = builder.Configuration.GetValue("RateLimiting:ApiWindowMinutes", 1);
+var refreshPermitLimit = builder.Configuration.GetValue("RateLimiting:RefreshPermitLimit", 30);
+var refreshWindowMinutes = builder.Configuration.GetValue("RateLimiting:RefreshWindowMinutes", 1);
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -167,6 +179,13 @@ builder.Services.AddRateLimiter(options =>
     {
         limiterOptions.PermitLimit = loginPermitLimit;
         limiterOptions.Window = TimeSpan.FromMinutes(loginWindowMinutes);
+        limiterOptions.QueueLimit = 0;
+        limiterOptions.AutoReplenishment = true;
+    });
+    options.AddFixedWindowLimiter("refresh", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = refreshPermitLimit;
+        limiterOptions.Window = TimeSpan.FromMinutes(refreshWindowMinutes);
         limiterOptions.QueueLimit = 0;
         limiterOptions.AutoReplenishment = true;
     });
@@ -277,7 +296,7 @@ app.UseAuthorization();
 app.UseRateLimiter();
 
 app.MapControllers();
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health", new HealthCheckOptions { AllowCachingResponses = false });
 
 using (var scope = app.Services.CreateScope())
 {

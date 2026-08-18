@@ -167,7 +167,10 @@ public sealed class UserAndOperationsServiceTests
 
         public string CurrentTokenId { get; private set; } = string.Empty;
 
-        public Task CreateAsync(UserSession session, CancellationToken cancellationToken = default)
+        public Task CreateAsync(
+            UserSession session,
+            RefreshToken refreshToken,
+            CancellationToken cancellationToken = default)
         {
             return Task.CompletedTask;
         }
@@ -187,6 +190,31 @@ public sealed class UserAndOperationsServiceTests
             UserId = userId;
             CurrentTokenId = currentTokenId;
             return Task.FromResult(RevokedSessionCount);
+        }
+
+        public Task<RefreshTokenSession?> GetRefreshTokenSessionAsync(
+            string refreshTokenHash,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<RefreshTokenSession?>(null);
+        }
+
+        public Task RotateRefreshTokenAsync(
+            RefreshTokenSession current,
+            string accessTokenId,
+            RefreshToken replacement,
+            DateTime now,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task RevokeSessionAsync(
+            Guid sessionId,
+            DateTime now,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
         }
     }
 

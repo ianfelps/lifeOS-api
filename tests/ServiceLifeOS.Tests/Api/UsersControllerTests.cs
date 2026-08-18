@@ -140,7 +140,10 @@ public sealed class UsersControllerTests
     private sealed class FakeUserSessionRepository : IUserSessionRepository
     {
         public int RevokedSessionCount { get; set; }
-        public Task CreateAsync(UserSession session, CancellationToken cancellationToken = default)
+        public Task CreateAsync(
+            UserSession session,
+            RefreshToken refreshToken,
+            CancellationToken cancellationToken = default)
         {
             return Task.CompletedTask;
         }
@@ -166,6 +169,31 @@ public sealed class UsersControllerTests
             CancellationToken cancellationToken = default)
         {
             return Task.FromResult(RevokedSessionCount);
+        }
+
+        public Task<RefreshTokenSession?> GetRefreshTokenSessionAsync(
+            string refreshTokenHash,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<RefreshTokenSession?>(null);
+        }
+
+        public Task RotateRefreshTokenAsync(
+            RefreshTokenSession current,
+            string accessTokenId,
+            RefreshToken replacement,
+            DateTime now,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task RevokeSessionAsync(
+            Guid sessionId,
+            DateTime now,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
         }
     }
 

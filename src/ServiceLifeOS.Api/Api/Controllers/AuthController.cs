@@ -38,6 +38,22 @@ public sealed class AuthController : ControllerBase
         }
     }
 
+    [HttpPost("refresh")]
+    [EnableRateLimiting("refresh")]
+    public async Task<ActionResult<AuthResponseDto>> Refresh(
+        RefreshTokenRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _authService.RefreshAsync(request, cancellationToken));
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return Unauthorized(new { message = exception.Message });
+        }
+    }
+
     [HttpGet("me")]
     [Authorize]
     public async Task<ActionResult<MeResponseDto>> Me(
