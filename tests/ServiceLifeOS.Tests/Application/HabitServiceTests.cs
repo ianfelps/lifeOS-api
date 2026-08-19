@@ -118,6 +118,19 @@ public sealed class HabitServiceTests
     }
 
     [Fact]
+    public async Task GetPendingHabits_ReturnsHabitTitle()
+    {
+        var repository = new FakeHabitRepository();
+        var habit = await AddHabitAsync(repository, HabitScheduleType.Daily, 1);
+        var service = CreateService(repository);
+
+        var pending = await service.GetPendingHabitsAsync("user-1", LocalToday());
+
+        var result = Assert.Single(pending);
+        Assert.Equal(habit.Title, result.Title);
+    }
+
+    [Fact]
     public async Task CreateCompletion_RejectsOtherUsersHabit()
     {
         var repository = new FakeHabitRepository();
