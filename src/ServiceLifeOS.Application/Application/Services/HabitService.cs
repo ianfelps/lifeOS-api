@@ -185,7 +185,17 @@ public sealed class HabitService
         var completions = (await _habits.GetCompletionsAsync(userId, habitId, cancellationToken)).Where(x => x.DeletedAt is null).ToArray();
         var period = GetPeriod(schedule, date);
         var completionCount = completions.Count(x => x.CompletedOn >= period.Start && x.CompletedOn <= period.End);
-        return new() { HabitId = habitId, PeriodStart = period.Start, PeriodEnd = period.End, CompletionCount = completionCount, TargetCount = schedule.TargetCount, IsCompleted = completionCount >= schedule.TargetCount, Streak = CalculateStreak(schedule, weekdays, completions, date) };
+        return new()
+        {
+            HabitId = habitId,
+            Title = habit.Title,
+            PeriodStart = period.Start,
+            PeriodEnd = period.End,
+            CompletionCount = completionCount,
+            TargetCount = schedule.TargetCount,
+            IsCompleted = completionCount >= schedule.TargetCount,
+            Streak = CalculateStreak(schedule, weekdays, completions, date)
+        };
     }
 
     public async Task<IReadOnlyCollection<HabitProgressResponseDto>> GetPendingHabitsAsync(string userId, DateOnly date, CancellationToken cancellationToken = default)

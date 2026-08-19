@@ -80,6 +80,8 @@ public sealed class HabitProgressResponseDto
 {
     public Guid HabitId { get; set; }
 
+    public string Title { get; set; } = string.Empty;
+
     public DateOnly PeriodStart { get; set; }
 
     public DateOnly PeriodEnd { get; set; }
