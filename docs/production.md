@@ -2,7 +2,7 @@
 
 ## Arquitetura
 
-O ambiente de producao executa a API em uma VPS Ubuntu 24.04 ARM64. O GitHub Actions testa, gera imagens Docker ARM64 no GitHub Container Registry (GHCR) e faz o deploy por SSH. O Nginx encerra TLS e encaminha requisicoes para a API vinculada exclusivamente a `127.0.0.1:3001`.
+O ambiente de producao executa a API em uma VPS Ubuntu 24.04 ARM64. O GitHub Actions testa, gera imagens Docker ARM64 no GitHub Container Registry (GHCR) e faz o deploy por SSH. O Nginx encerra TLS e encaminha requisicoes de `https://lifeos.ianfelps.mywire.org/api` para a API vinculada exclusivamente a `127.0.0.1:3001`.
 
 O PostgreSQL continua externo. A VPS nao executa banco de dados, nao armazena codigo-fonte da aplicacao e nao expoe a porta do container publicamente.
 
@@ -88,9 +88,34 @@ Configure os seguintes secrets no repositorio:
 | `VPS_USER` | Usuario restrito de deploy, por exemplo `lifeos-api-deploy`. |
 | `VPS_SSH_PORT` | Porta SSH da VPS, normalmente `22`. |
 | `VPS_SSH_PRIVATE_KEY` | Conteudo completo da chave privada exclusiva do GitHub Actions. |
-| `VPS_SSH_KNOWN_HOSTS` | Chave publica do host, obtida com `ssh-keyscan -H HOSTNAME`. |
+| `VPS_SSH_KNOWN_HOSTS` | Chave publica ED25519 do host, validada pela fingerprint da VPS. |
 
 O `GITHUB_TOKEN` temporario faz login no GHCR durante o deploy. Nenhum token de registry e persistido na VPS.
+
+## Nginx
+
+O Nginx remove o prefixo publico `/api/` antes de encaminhar a requisicao para a aplicacao. As rotas internas continuam em sua forma atual, como `/health` e `/auth/login`.
+
+```nginx
+server {
+    listen 80;
+    listen [::]:80;
+    server_name lifeos.ianfelps.mywire.org;
+
+    client_max_body_size 30m;
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:3001/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+        proxy_send_timeout 120s;
+    }
+}
+```
 
 ## Operacao
 
