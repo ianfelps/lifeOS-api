@@ -22,8 +22,6 @@ using ServiceLifeOS.Infrastructure.Options;
 using ServiceLifeOS.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
-var bootstrapRequested = args.Any(argument =>
-    string.Equals(argument, "--bootstrap", StringComparison.Ordinal));
 var meter = new Meter("ServiceLifeOS.Api");
 var requestDuration = meter.CreateHistogram<double>("http.server.request.duration", unit: "ms");
 var requestCount = meter.CreateCounter<long>("http.server.request.count");
@@ -31,9 +29,6 @@ var errorCount = meter.CreateCounter<long>("http.server.error.count");
 
 JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
 
-var bootstrapUserOptions = builder.Configuration
-    .GetSection("BootstrapUser")
-    .Get<BootstrapUserOptions>() ?? new BootstrapUserOptions();
 var jwtOptions = builder.Configuration
     .GetSection("Jwt")
     .Get<JwtOptions>();
@@ -61,7 +56,6 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, CurrentUserService>();
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
-builder.Services.AddSingleton(bootstrapUserOptions);
 builder.Services.AddSingleton(builder.Configuration.GetSection("PasswordPolicy").Get<PasswordPolicyOptions>() ?? new PasswordPolicyOptions());
 
 if (jwtOptions is null)
@@ -77,15 +71,6 @@ if (string.IsNullOrWhiteSpace(jwtOptions.Secret) || jwtOptions.Secret.Length < 3
 if (jwtOptions.AccessTokenExpirationMinutes <= 0 || jwtOptions.RefreshTokenExpirationDays <= 0)
 {
     throw new InvalidOperationException("Jwt token expiration settings must be greater than zero.");
-}
-
-if (bootstrapRequested &&
-    (string.IsNullOrWhiteSpace(bootstrapUserOptions.UserId) ||
-     string.IsNullOrWhiteSpace(bootstrapUserOptions.UserName) ||
-     string.IsNullOrWhiteSpace(bootstrapUserOptions.DisplayName) ||
-     string.IsNullOrWhiteSpace(bootstrapUserOptions.Password)))
-{
-    throw new InvalidOperationException("Bootstrap user configuration is incomplete.");
 }
 
 builder.Services
@@ -310,21 +295,6 @@ if (app.Environment.IsDevelopment())
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
-}
-
-if (bootstrapRequested)
-{
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
-    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
-        .CreateLogger("Bootstrap");
-
-    var userCreated = await DbSeeder.SeedAsync(db, bootstrapUserOptions, passwordHasher);
-    logger.LogInformation(
-        "Bootstrap completed. The provisioned user was {BootstrapResult}.",
-        userCreated ? "created" : "updated");
-    return;
 }
 
 app.Run();

@@ -18,10 +18,6 @@ ENV ASPNETCORE_URLS=http://+:8080 \
     DOTNET_HOSTBUILDER__RELOADCONFIGONCHANGE=false
 EXPOSE 8080
 
-FROM runtime-base AS bootstrap
-COPY --from=build /app/publish .
-CMD ["dotnet", "ServiceLifeOS.Api.dll", "--bootstrap"]
-
 FROM runtime-base AS runtime
 COPY --from=build /app/publish .
 CMD ["sh", "-c", "dotnet ServiceLifeOS.Api.dll --urls http://0.0.0.0:${PORT:-8080}"]

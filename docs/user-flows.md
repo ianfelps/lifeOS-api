@@ -4,7 +4,7 @@ Este guia descreve as jornadas principais da API. Ele complementa os contratos d
 
 ## Convencoes gerais
 
-- Exceto por `POST /auth/login` e `GET /health`, todas as rotas exigem `Authorization: Bearer <accessToken>`.
+- Exceto por `POST /auth/register`, `POST /auth/login` e `GET /health`, todas as rotas exigem `Authorization: Bearer <accessToken>`.
 - O usuario autenticado e obtido do token; o frontend nunca informa `userId` no corpo ou na URL.
 - Datas de negocio usam `yyyy-MM-dd` e seguem `America/Sao_Paulo`.
 - Respostas de erro usam `{ "message": "..." }`.
@@ -12,6 +12,13 @@ Este guia descreve as jornadas principais da API. Ele complementa os contratos d
 - Listagens paginadas recebem `page` e `pageSize`; o formato retorna `items`, `page`, `pageSize` e `totalCount`.
 
 ## 1. Autenticacao
+
+### Criar conta inicial
+
+1. Quando ainda nao houver usuario ativo, o frontend envia `userName`, `displayName` e `password` para `POST /auth/register`.
+2. A API cria a conta e os dados iniciais de financas, gamificacao e preferencias.
+3. O frontend envia as credenciais criadas para `POST /auth/login`.
+4. Depois da primeira conta, novas tentativas de cadastro retornam `409`.
 
 ### Entrar
 

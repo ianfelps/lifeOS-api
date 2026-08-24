@@ -1,4 +1,5 @@
 using ServiceLifeOS.Application.Ports;
+using ServiceLifeOS.Application.Options;
 using ServiceLifeOS.Domain.Entities;
 using ServiceLifeOS.Dtos.Auth;
 
@@ -7,26 +8,73 @@ namespace ServiceLifeOS.Application.Services;
 public sealed class AuthService
 {
     private readonly IUserRepository _users;
+    private readonly IInitialUserRegistrationRepository _initialUserRegistration;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITokenService _tokenService;
     private readonly IUserSessionRepository _sessions;
     private readonly IAuditLogRepository _auditLogs;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly PasswordPolicyOptions _passwordPolicy;
 
     public AuthService(
         IUserRepository users,
+        IInitialUserRegistrationRepository initialUserRegistration,
         IPasswordHasher passwordHasher,
         ITokenService tokenService,
         IUserSessionRepository sessions,
         IAuditLogRepository auditLogs,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        PasswordPolicyOptions? passwordPolicy = null)
     {
         _users = users;
+        _initialUserRegistration = initialUserRegistration;
         _passwordHasher = passwordHasher;
         _tokenService = tokenService;
         _sessions = sessions;
         _auditLogs = auditLogs;
         _unitOfWork = unitOfWork;
+        _passwordPolicy = passwordPolicy ?? new PasswordPolicyOptions();
+    }
+
+    public async Task<MeResponseDto> RegisterInitialUserAsync(
+        RegisterInitialUserRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var userName = request.UserName?.Trim();
+        var displayName = request.DisplayName?.Trim();
+        if (string.IsNullOrWhiteSpace(userName) ||
+            string.IsNullOrWhiteSpace(displayName) ||
+            string.IsNullOrWhiteSpace(request.Password))
+        {
+            throw new ArgumentException("User name, display name, and password are required.");
+        }
+        if (request.Password.Length < _passwordPolicy.MinimumLength)
+        {
+            throw new ArgumentException("Password does not meet the minimum length.");
+        }
+
+        var now = DateTime.UtcNow;
+        var user = new AppUser
+        {
+            Id = Guid.NewGuid().ToString(),
+            UserName = userName,
+            DisplayName = displayName,
+            PasswordHash = _passwordHasher.HashPassword(request.Password),
+            Active = true,
+            CreatedAt = now,
+            UpdatedAt = now
+        };
+        if (!await _initialUserRegistration.CreateAsync(user, cancellationToken))
+        {
+            throw new InvalidOperationException("The initial user has already been registered.");
+        }
+
+        return new MeResponseDto
+        {
+            UserId = user.Id,
+            UserName = user.UserName,
+            DisplayName = user.DisplayName
+        };
     }
 
     public async Task<AuthResponseDto> LoginAsync(
