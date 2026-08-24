@@ -93,7 +93,7 @@ jobs:
           APP_IMAGE="$APP_IMAGE" docker compose --env-file .env.production -f docker-compose.production.yml pull
           MIGRATIONS_IMAGE="$MIGRATIONS_IMAGE" docker compose --env-file .env.production -f docker-compose.migrate.production.yml pull
           docker logout ghcr.io
-          MIGRATIONS_IMAGE="$MIGRATIONS_IMAGE" docker compose --env-file .env.production -f docker-compose.migrate.production.yml run --rm -T migrations
+          MIGRATIONS_IMAGE="$MIGRATIONS_IMAGE" docker compose --env-file .env.production -f docker-compose.migrate.production.yml run --rm --interactive=false migrations
           APP_IMAGE="$APP_IMAGE" docker compose --env-file .env.production -f docker-compose.production.yml up -d
           for attempt in $(seq 1 30); do
             if curl --fail --silent --show-error -H 'X-Forwarded-Proto: https' http://127.0.0.1:3001/health > /dev/null; then
