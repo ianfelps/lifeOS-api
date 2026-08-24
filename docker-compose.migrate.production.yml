@@ -1,0 +1,5 @@
+services:
+  migrations:
+    image: ${MIGRATIONS_IMAGE:?MIGRATIONS_IMAGE must be set}
+    env_file:
+      - ${ENV_FILE:-.env.production}
