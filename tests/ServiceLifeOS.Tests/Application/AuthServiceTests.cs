@@ -9,6 +9,45 @@ namespace ServiceLifeOS.Tests.Application;
 public sealed class AuthServiceTests
 {
     [Fact]
+    public async Task RegisterInitialUser_CreatesTheOnlyUser()
+    {
+        var registrations = new FakeInitialUserRegistrationRepository();
+        var service = CreateService(
+            new FakeUserSessionRepository(),
+            new FakeTokenService(),
+            registrations);
+
+        var response = await service.RegisterInitialUserAsync(new()
+        {
+            UserName = "user",
+            DisplayName = "User",
+            Password = "password-123"
+        });
+
+        var user = Assert.IsType<AppUser>(registrations.CreatedUser);
+        Assert.Equal(user.Id, response.UserId);
+        Assert.Equal("user", response.UserName);
+        Assert.Equal("User", response.DisplayName);
+        Assert.Equal("password-123", user.PasswordHash);
+    }
+
+    [Fact]
+    public async Task RegisterInitialUser_RejectsRegistrationAfterTheFirstUser()
+    {
+        var service = CreateService(
+            new FakeUserSessionRepository(),
+            new FakeTokenService(),
+            new FakeInitialUserRegistrationRepository { Created = false });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.RegisterInitialUserAsync(new()
+        {
+            UserName = "user",
+            DisplayName = "User",
+            Password = "password-123"
+        }));
+    }
+
+    [Fact]
     public async Task Login_CreatesSessionWithHashedRefreshToken()
     {
         var sessions = new FakeUserSessionRepository();
@@ -90,10 +129,14 @@ public sealed class AuthServiceTests
         Assert.Equal(session.Id, sessions.RevokedSessionId);
     }
 
-    private static AuthService CreateService(FakeUserSessionRepository sessions, FakeTokenService tokenService)
+    private static AuthService CreateService(
+        FakeUserSessionRepository sessions,
+        FakeTokenService tokenService,
+        FakeInitialUserRegistrationRepository? registrations = null)
     {
         return new AuthService(
             new FakeUserRepository(),
+            registrations ?? new FakeInitialUserRegistrationRepository(),
             new FakePasswordHasher(),
             tokenService,
             sessions,
@@ -129,6 +172,19 @@ public sealed class AuthServiceTests
             CancellationToken cancellationToken = default)
         {
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeInitialUserRegistrationRepository : IInitialUserRegistrationRepository
+    {
+        public bool Created { get; init; } = true;
+
+        public AppUser? CreatedUser { get; private set; }
+
+        public Task<bool> CreateAsync(AppUser user, CancellationToken cancellationToken = default)
+        {
+            CreatedUser = user;
+            return Task.FromResult(Created);
         }
     }
 

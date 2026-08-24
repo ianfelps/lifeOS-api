@@ -7,6 +7,15 @@ public sealed class LoginRequestDto
     public string? Password { get; set; }
 }
 
+public sealed class RegisterInitialUserRequestDto
+{
+    public string? UserName { get; set; }
+
+    public string? DisplayName { get; set; }
+
+    public string? Password { get; set; }
+}
+
 public sealed class AuthResponseDto
 {
     public string AccessToken { get; set; } = string.Empty;

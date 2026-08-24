@@ -20,10 +20,6 @@ Copie `.env.example` para `.env` somente no ambiente local. O arquivo `.env` e i
 | `Jwt__Secret` | Segredo com no minimo 32 caracteres. |
 | `Jwt__AccessTokenExpirationMinutes` | Validade do access token, com padrao de 15 minutos. |
 | `Jwt__RefreshTokenExpirationDays` | Validade do refresh token rotativo, com padrao de 30 dias. |
-| `BootstrapUser__UserId` | Identificador estavel da conta unica. |
-| `BootstrapUser__UserName` | Nome de usuario inicial. |
-| `BootstrapUser__DisplayName` | Nome exibido. |
-| `BootstrapUser__Password` | Senha inicial. |
 | `Cors__AllowedOrigins__0` | Origem HTTPS permitida, atualmente `https://lifeos.vercel.app`. |
 | `RateLimiting__LoginPermitLimit` | Limite de login por IP. |
 | `RateLimiting__LoginWindowMinutes` | Janela do limite de login. |
@@ -34,10 +30,6 @@ Copie `.env.example` para `.env` somente no ambiente local. O arquivo `.env` e i
 | `PasswordPolicy__MinimumLength` | Comprimento minimo da senha, com padrao de 12. |
 
 Crie `/opt/lifeos-api/.env.production` somente na VPS, com permissao `600` e propriedade do usuario de deploy. A API recusa iniciar em producao quando connection string ou JWT estiverem ausentes; ela nunca usa valores de demonstracao em producao. Nunca envie um `.env` real ao repositorio.
-
-## Bootstrap
-
-Em producao, a API recusa iniciar se a connection string, a origem CORS ou os dados de `BootstrapUser` estiverem ausentes. Quando a conta ainda nao existe, o bootstrap cria o usuario e seus dados iniciais. Em execucoes posteriores, o processo nao duplica categorias, configuracoes ou badges existentes.
 
 ## Migrations
 
@@ -51,18 +43,6 @@ docker compose --env-file .env.production -f docker-compose.migrate.production.y
   run --rm migrations
 ```
 
-## Bootstrap manual
-
-O deploy normal nunca cria usuarios ou dados iniciais. Depois de aplicar as migrations, crie ou atualize o usuario provisionado de forma manual:
-
-```bash
-APP_IMAGE=ghcr.io/OWNER/lifeos-api:COMMIT_SHA \
-docker compose --env-file .env.production -f docker-compose.bootstrap.production.yml \
-  run --rm bootstrap
-```
-
-O comando exige `BootstrapUser__UserId`, `BootstrapUser__UserName`, `BootstrapUser__DisplayName` e `BootstrapUser__Password` no `.env.production`. Ele e idempotente: cria o usuario e os dados iniciais ausentes, sem remover registros existentes. O log final informa se o usuario foi criado ou atualizado. O alvo `bootstrap` encerra quando a operacao termina e nao inicia um servidor HTTP.
-
 ## Runtime
 
 - `GET /health` e publico, nao testa o banco e responde sem cache; o workflow o consulta por `127.0.0.1:3001` apos cada deploy.
@@ -73,6 +53,7 @@ O comando exige `BootstrapUser__UserId`, `BootstrapUser__UserName`, `BootstrapUs
 - Login aceita 10 requisicoes por IP a cada 15 minutos.
 - A API aceita 300 requisicoes por IP por minuto.
 - HSTS, headers de seguranca e suporte a headers encaminhados pelo Nginx sao habilitados em producao.
+- `POST /auth/register` cria a conta inicial e seus dados padrao somente quando nao ha usuarios ativos.
 
 ## Supabase
 
@@ -121,12 +102,14 @@ server {
 
 ```bash
 sudo -u lifeos-api-deploy -H docker compose \
+  --env-file /opt/lifeos-api/.deployment.env \
   --env-file /opt/lifeos-api/.env.production \
   -f /opt/lifeos-api/docker-compose.production.yml ps
 ```
 
 ```bash
 sudo -u lifeos-api-deploy -H docker compose \
+  --env-file /opt/lifeos-api/.deployment.env \
   --env-file /opt/lifeos-api/.env.production \
   -f /opt/lifeos-api/docker-compose.production.yml logs --tail 100
 ```

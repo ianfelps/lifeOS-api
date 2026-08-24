@@ -22,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork>(provider =>
             provider.GetRequiredService<AppDbContext>());
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IInitialUserRegistrationRepository, InitialUserRegistrationRepository>();
         services.AddScoped<IUserPreferenceRepository, UserPreferenceRepository>();
         services.AddScoped<IUserSessionRepository, UserSessionRepository>();
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();

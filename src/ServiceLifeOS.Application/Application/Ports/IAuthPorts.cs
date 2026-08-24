@@ -28,6 +28,13 @@ public interface IUserRepository
         CancellationToken cancellationToken = default);
 }
 
+public interface IInitialUserRegistrationRepository
+{
+    Task<bool> CreateAsync(
+        AppUser user,
+        CancellationToken cancellationToken = default);
+}
+
 public interface IPasswordHasher
 {
     string HashPassword(string password);

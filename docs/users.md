@@ -1,8 +1,26 @@
 # Usuario
 
-As rotas deste documento exigem JWT Bearer. A identidade e a sessao atual sao obtidas exclusivamente das claims do token; a API nao aceita identificador de usuario informado pelo cliente.
+Exceto por `POST /auth/register`, as rotas deste documento exigem JWT Bearer. A identidade e a sessao atual sao obtidas exclusivamente das claims do token; a API nao aceita identificador de usuario informado pelo cliente.
 
 Erros de validacao respondem `400`, credenciais invalidas respondem `401` e recursos ausentes respondem `404`. As respostas de erro usam `{ "message": "..." }`.
+
+## Cadastro inicial
+
+| Metodo | Rota | Funcao |
+| --- | --- | --- |
+| POST | `/auth/register` | Cria a unica conta e seus dados iniciais quando nao ha usuarios ativos. |
+
+Exemplo:
+
+```json
+{
+  "userName": "ian",
+  "displayName": "Ian",
+  "password": "a-strong-password"
+}
+```
+
+A senha precisa respeitar `PasswordPolicy:MinimumLength`. O endpoint retorna `201` com `userId`, `userName` e `displayName`. Depois da primeira conta, retorna `409`.
 
 ## Preferencias
 

@@ -22,6 +22,18 @@ public sealed class AuthController : ControllerBase
         _currentUser = currentUser;
     }
 
+    [AllowAnonymous]
+    [HttpPost("register")]
+    [EnableRateLimiting("login")]
+    public async Task<ActionResult<MeResponseDto>> RegisterInitialUser(
+        RegisterInitialUserRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        return StatusCode(
+            StatusCodes.Status201Created,
+            await _authService.RegisterInitialUserAsync(request, cancellationToken));
+    }
+
     [HttpPost("login")]
     [EnableRateLimiting("login")]
     public async Task<ActionResult<AuthResponseDto>> Login(

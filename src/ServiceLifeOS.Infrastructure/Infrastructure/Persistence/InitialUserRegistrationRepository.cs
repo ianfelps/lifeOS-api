@@ -1,54 +1,38 @@
 using Microsoft.EntityFrameworkCore;
-using ServiceLifeOS.Application.Options;
 using ServiceLifeOS.Application.Ports;
 using ServiceLifeOS.Domain.Entities;
 
 namespace ServiceLifeOS.Infrastructure.Persistence;
 
-public static class DbSeeder
+public sealed class InitialUserRegistrationRepository : IInitialUserRegistrationRepository
 {
-    public static async Task<bool> SeedAsync(
-        AppDbContext db,
-        BootstrapUserOptions bootstrapUser,
-        IPasswordHasher passwordHasher,
+    private const long InitialUserRegistrationLockId = 421358;
+
+    private readonly AppDbContext _db;
+
+    public InitialUserRegistrationRepository(AppDbContext db)
+    {
+        _db = db;
+    }
+
+    public async Task<bool> CreateAsync(
+        AppUser user,
         CancellationToken cancellationToken = default)
     {
-        var now = DateTime.UtcNow;
-        var user = await db.Users.FirstOrDefaultAsync(
-            x => x.Id == bootstrapUser.UserId,
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+        await _db.Database.ExecuteSqlRawAsync(
+            $"SELECT pg_advisory_xact_lock({InitialUserRegistrationLockId});",
             cancellationToken);
-
-        var userCreated = user is null;
-        if (user is null)
+        if (await _db.Users.AnyAsync(x => x.Active, cancellationToken))
         {
-            db.Users.Add(new AppUser
-            {
-                Id = bootstrapUser.UserId.Trim(),
-                UserName = bootstrapUser.UserName.Trim(),
-                DisplayName = bootstrapUser.DisplayName.Trim(),
-                PasswordHash = passwordHasher.HashPassword(bootstrapUser.Password),
-                Active = true,
-                CreatedAt = now,
-                UpdatedAt = now
-            });
-        }
-        else
-        {
-            user.UserName = bootstrapUser.UserName.Trim();
-            user.DisplayName = bootstrapUser.DisplayName.Trim();
-            user.Active = true;
-            user.UpdatedAt = now;
-
-            if (string.IsNullOrWhiteSpace(user.PasswordHash))
-            {
-                user.PasswordHash = passwordHasher.HashPassword(bootstrapUser.Password);
-            }
+            return false;
         }
 
-        await SeedDefaultsAsync(db, bootstrapUser.UserId, now, cancellationToken);
-
-        await db.SaveChangesAsync(cancellationToken);
-        return userCreated;
+        _db.Users.Add(user);
+        await SeedDefaultsAsync(_db, user.Id, user.CreatedAt, cancellationToken);
+        await _db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return true;
     }
 
     private static async Task SeedDefaultsAsync(
