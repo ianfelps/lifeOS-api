@@ -1,0 +1,6 @@
+services:
+  bootstrap:
+    image: ${APP_IMAGE:?APP_IMAGE must be set}
+    env_file:
+      - ${ENV_FILE:-.env.production}
+    command: ["dotnet", "ServiceLifeOS.Api.dll", "--bootstrap"]

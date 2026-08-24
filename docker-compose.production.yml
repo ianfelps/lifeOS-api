@@ -1,0 +1,8 @@
+services:
+  api:
+    image: ${APP_IMAGE:?APP_IMAGE must be set}
+    restart: unless-stopped
+    env_file:
+      - ${ENV_FILE:-.env.production}
+    ports:
+      - "127.0.0.1:3001:8080"

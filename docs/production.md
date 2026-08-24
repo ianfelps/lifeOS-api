@@ -2,9 +2,11 @@
 
 ## Arquitetura
 
-O ambiente de producao usa um Web Service Docker da Render chamado `lifeOS-api`, na regiao Oregon e plano Free. O PostgreSQL e fornecido pelo Supabase via Session Pooler. A Render encerra TLS e encaminha requisicoes HTTPS para a API.
+O ambiente de producao executa a API em uma VPS Ubuntu 24.04 ARM64. O GitHub Actions testa, gera imagens Docker ARM64 no GitHub Container Registry (GHCR) e faz o deploy por SSH. O Nginx encerra TLS e encaminha requisicoes de `https://lifeos.ianfelps.mywire.org/api` para a API vinculada exclusivamente a `127.0.0.1:3001`.
 
-O deploy ocorre automaticamente a partir da branch `main`. O `render.yaml` declara apenas valores publicos e nomes de variaveis privadas; segredos nunca sao versionados.
+O PostgreSQL continua externo. A VPS nao executa banco de dados, nao armazena codigo-fonte da aplicacao e nao expoe a porta do container publicamente.
+
+O deploy ocorre apenas quando uma pull request interna de `development` e mesclada em `main`. O workflow publica imagens imutaveis identificadas pelo SHA do commit, aplica migrations com a imagem correspondente e somente entao atualiza a API.
 
 ## Variaveis de ambiente
 
@@ -31,7 +33,7 @@ Copie `.env.example` para `.env` somente no ambiente local. O arquivo `.env` e i
 | `RateLimiting__RefreshWindowMinutes` | Janela do limite de renovacoes por IP. |
 | `PasswordPolicy__MinimumLength` | Comprimento minimo da senha, com padrao de 12. |
 
-Na Render, configure todos os valores com `sync: false` no Dashboard do servico antes do primeiro deploy. A API recusa iniciar em producao quando connection string ou JWT estiverem ausentes; ela nunca usa valores de demonstracao em producao. Nunca envie um `.env` real ao repositorio.
+Crie `/opt/lifeos-api/.env.production` somente na VPS, com permissao `600` e propriedade do usuario de deploy. A API recusa iniciar em producao quando connection string ou JWT estiverem ausentes; ela nunca usa valores de demonstracao em producao. Nunca envie um `.env` real ao repositorio.
 
 ## Bootstrap
 
@@ -39,35 +41,94 @@ Em producao, a API recusa iniciar se a connection string, a origem CORS ou os da
 
 ## Migrations
 
-O plano Free da Render nao oferece `preDeployCommand`. Por isso, aplique migrations manualmente antes de cada deploy:
+O workflow executa migrations automaticamente antes de atualizar a API. A imagem de migrations contem o SDK e `dotnet ef`; a imagem de runtime contem somente o runtime .NET e nao executa migrations no startup.
+
+Para executar uma migration manualmente em uma emergencia, use a mesma tag publicada no deploy:
 
 ```bash
-docker compose --env-file .env -f docker-compose.migrate.yml run --rm migrations
+MIGRATIONS_IMAGE=ghcr.io/OWNER/lifeos-api-migrations:COMMIT_SHA \
+docker compose --env-file .env.production -f docker-compose.migrate.production.yml \
+  run --rm migrations
 ```
-
-Esse comando usa o alvo `migrations` do `Dockerfile`, que contem o SDK e `dotnet ef`. A factory de design-time le `ConnectionStrings__DefaultConnection` do ambiente, portanto o comando usa a mesma conexao configurada no `.env`. A imagem da API publicada usa apenas o runtime .NET e nao executa migrations no startup.
 
 ## Bootstrap manual
 
 O deploy normal nunca cria usuarios ou dados iniciais. Depois de aplicar as migrations, crie ou atualize o usuario provisionado de forma manual:
 
 ```bash
-docker compose --env-file .env -f docker-compose.bootstrap.yml run --rm bootstrap
+APP_IMAGE=ghcr.io/OWNER/lifeos-api:COMMIT_SHA \
+docker compose --env-file .env.production -f docker-compose.bootstrap.production.yml \
+  run --rm bootstrap
 ```
 
-O comando exige `BootstrapUser__UserId`, `BootstrapUser__UserName`, `BootstrapUser__DisplayName` e `BootstrapUser__Password` no `.env`. Ele e idempotente: cria o usuario e os dados iniciais ausentes, sem remover registros existentes. O log final informa se o usuario foi criado ou atualizado. O alvo `bootstrap` encerra quando a operacao termina e nao inicia um servidor HTTP.
+O comando exige `BootstrapUser__UserId`, `BootstrapUser__UserName`, `BootstrapUser__DisplayName` e `BootstrapUser__Password` no `.env.production`. Ele e idempotente: cria o usuario e os dados iniciais ausentes, sem remover registros existentes. O log final informa se o usuario foi criado ou atualizado. O alvo `bootstrap` encerra quando a operacao termina e nao inicia um servidor HTTP.
 
 ## Runtime
 
-- `GET /health` e publico, nao testa o banco e responde sem cache; o `render.yaml` ja o configura como health check.
-- O container escuta `PORT` fornecida pela Render, com fallback em `8080`; nao defina uma porta fixa no Dashboard.
-- A imagem desabilita recarga de arquivos de configuracao para evitar watchers `inotify` no limite de processos da Render; alteracoes de configuracao exigem novo deploy.
+- `GET /health` e publico, nao testa o banco e responde sem cache; o workflow o consulta por `127.0.0.1:3001` apos cada deploy.
+- O container escuta `PORT` quando fornecida, com fallback em `8080`. O Compose publica somente `127.0.0.1:3001` para o Nginx.
+- A imagem desabilita recarga de arquivos de configuracao para evitar watchers `inotify`; alteracoes de configuracao exigem novo deploy.
 - OpenAPI (`/openapi/v1.json`) e Scalar (`/scalar`) ficam disponiveis apenas em desenvolvimento.
 - CORS aceita somente as origens configuradas em `Cors__AllowedOrigins`.
 - Login aceita 10 requisicoes por IP a cada 15 minutos.
 - A API aceita 300 requisicoes por IP por minuto.
-- HSTS, headers de seguranca e suporte a headers encaminhados pela proxy da Render sao habilitados em producao.
+- HSTS, headers de seguranca e suporte a headers encaminhados pelo Nginx sao habilitados em producao.
 
 ## Supabase
 
-Use a connection string do Session Pooler com SSL para `ConnectionStrings__DefaultConnection`. Mantenha as credenciais somente no Dashboard da Render e no `.env` local ignorado. Realize backups pelo painel do Supabase conforme o procedimento operacional do projeto.
+Use a connection string do Session Pooler com SSL para `ConnectionStrings__DefaultConnection`. Mantenha as credenciais somente no `.env.production` da VPS e no `.env` local ignorado. Realize backups pelo painel do Supabase conforme o procedimento operacional do projeto.
+
+## GitHub Actions
+
+Configure os seguintes secrets no repositorio:
+
+| Secret | Uso |
+| --- | --- |
+| `VPS_HOST` | IP publico ou hostname da VPS. |
+| `VPS_USER` | Usuario restrito de deploy, por exemplo `lifeos-api-deploy`. |
+| `VPS_SSH_PORT` | Porta SSH da VPS, normalmente `22`. |
+| `VPS_SSH_PRIVATE_KEY` | Conteudo completo da chave privada exclusiva do GitHub Actions. |
+| `VPS_SSH_KNOWN_HOSTS` | Chave publica ED25519 do host, validada pela fingerprint da VPS. |
+
+O `GITHUB_TOKEN` temporario faz login no GHCR durante o deploy. Nenhum token de registry e persistido na VPS.
+
+## Nginx
+
+O Nginx remove o prefixo publico `/api/` antes de encaminhar a requisicao para a aplicacao. As rotas internas continuam em sua forma atual, como `/health` e `/auth/login`.
+
+```nginx
+server {
+    listen 80;
+    listen [::]:80;
+    server_name lifeos.ianfelps.mywire.org;
+
+    client_max_body_size 30m;
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:3001/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+        proxy_send_timeout 120s;
+    }
+}
+```
+
+## Operacao
+
+```bash
+sudo -u lifeos-api-deploy -H docker compose \
+  --env-file /opt/lifeos-api/.env.production \
+  -f /opt/lifeos-api/docker-compose.production.yml ps
+```
+
+```bash
+sudo -u lifeos-api-deploy -H docker compose \
+  --env-file /opt/lifeos-api/.env.production \
+  -f /opt/lifeos-api/docker-compose.production.yml logs --tail 100
+```
+
+O arquivo `render.yaml` e legado da hospedagem anterior. Mantenha o servico Render ativo ate validar a VPS e desative-o pelo Dashboard da Render para evitar deploys paralelos.
