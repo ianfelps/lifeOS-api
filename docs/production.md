@@ -6,7 +6,9 @@ O ambiente de producao executa a API em uma VPS Ubuntu 24.04 ARM64. O GitHub Act
 
 O PostgreSQL continua externo. A VPS nao executa banco de dados, nao armazena codigo-fonte da aplicacao e nao expoe a porta do container publicamente.
 
-O deploy ocorre apenas quando uma pull request interna de `development` e mesclada em `main`. O workflow publica imagens imutaveis identificadas pelo SHA do commit, aplica migrations com a imagem correspondente e somente entao atualiza a API.
+O CI executa build e testes em pull requests para `development` e `main`, alem de cada push para `development`. Configure o check `CI / test` como obrigatorio nas regras de protecao dessas branches.
+
+O deploy ocorre apenas quando uma pull request interna de `development` e mesclada em `main`. O workflow repete build e testes para o commit final, publica imagens imutaveis identificadas pelo SHA do commit, aplica migrations com a imagem correspondente e somente entao atualiza a API.
 
 ## Variaveis de ambiente
 
