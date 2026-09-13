@@ -300,6 +300,14 @@ namespace ServiceLifeOS.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("name");
 
+                    b.Property<int>("PrimaryMuscleGroup")
+                        .HasColumnType("integer")
+                        .HasColumnName("primary_muscle_group");
+
+                    b.Property<int?>("SecondaryMuscleGroup")
+                        .HasColumnType("integer")
+                        .HasColumnName("secondary_muscle_group");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -1102,6 +1110,14 @@ namespace ServiceLifeOS.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("name");
+
+                    b.Property<int?>("PrimaryMuscleGroup")
+                        .HasColumnType("integer")
+                        .HasColumnName("primary_muscle_group");
+
+                    b.Property<int?>("SecondaryMuscleGroup")
+                        .HasColumnType("integer")
+                        .HasColumnName("secondary_muscle_group");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")

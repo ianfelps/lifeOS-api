@@ -36,8 +36,8 @@ As entidades do MVP pertencem diretamente a `AppUser` por `UserId`. Todas as nov
 
 ## Treinos
 
-- `Exercise`: catalogo reutilizavel de exercicios.
-- `WorkoutSheet`, `WorkoutSheetExercise` e `WorkoutSheetExerciseSet`: ficha e suas series planejadas individualmente.
+- `Exercise`: catalogo reutilizavel de exercicios com grupo muscular primario e secundario opcional.
+- `WorkoutSheet`, `WorkoutSheetExercise` e `WorkoutSheetExerciseSet`: ficha, seus grupos musculares opcionais e suas series planejadas individualmente.
 - `WorkoutSession`, `WorkoutSessionExercise` e `WorkoutSessionSet`: execucao de treino. Exercicios e series da sessao sao snapshot independente da ficha. Cada serie com carga registra sua propria unidade, permitindo kg e lb no mesmo treino.
 
 ## Metas e gamificacao

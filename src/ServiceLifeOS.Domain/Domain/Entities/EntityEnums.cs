@@ -56,6 +56,22 @@ public enum WeightUnit
     Pounds
 }
 
+public enum MuscleGroup
+{
+    Other,
+    Chest,
+    Back,
+    Shoulders,
+    Biceps,
+    Triceps,
+    Forearms,
+    Quadriceps,
+    Hamstrings,
+    Glutes,
+    Calves,
+    Abdomen
+}
+
 public enum GoalType
 {
     Financial,

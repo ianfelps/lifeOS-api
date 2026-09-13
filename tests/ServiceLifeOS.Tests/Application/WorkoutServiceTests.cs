@@ -134,6 +134,33 @@ public sealed class WorkoutServiceTests
                 }));
     }
 
+    [Fact]
+    public async Task CreateExercise_RequiresAValidPrimaryMuscleGroup()
+    {
+        var service = CreateService(new FakeWorkoutRepository());
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            service.CreateExerciseAsync("user-1", new() { Name = "Bench press" }));
+    }
+
+    [Fact]
+    public async Task CreateSheet_RejectsMoreThanTwoMuscleGroups()
+    {
+        var repository = new FakeWorkoutRepository();
+        var exercise = repository.AddExercise();
+        var service = CreateService(repository);
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            service.CreateSheetAsync(
+                "user-1",
+                new()
+                {
+                    Name = "Upper",
+                    MuscleGroups = [MuscleGroup.Chest, MuscleGroup.Back, MuscleGroup.Shoulders],
+                    Exercises = [new() { ExerciseId = exercise.Id, Sets = [new() { TargetRepetitions = 10 }] }]
+                }));
+    }
+
     private static WorkoutService CreateService(FakeWorkoutRepository repository)
     {
         return new WorkoutService(repository, new FakeAuditLogRepository(), new FakeUnitOfWork());

@@ -11,7 +11,7 @@ Todas as rotas exigem JWT Bearer e usam o usuario presente no token. Recursos de
 | PUT | `/workouts/exercises/{exerciseId}` | Edita exercicio |
 | DELETE | `/workouts/exercises/{exerciseId}` | Arquiva exercicio |
 
-Exercicios arquivados preservam fichas e sessoes existentes, mas nao podem ser incluidos em novas fichas.
+Exercicios possuem grupo muscular primario obrigatorio e grupo secundario opcional, que deve ser diferente do primario. Exercicios existentes antes dessa classificacao usam `Other` ate serem atualizados. Exercicios arquivados preservam fichas e sessoes existentes, mas nao podem ser incluidos em novas fichas.
 
 ## Fichas
 
@@ -23,7 +23,7 @@ Exercicios arquivados preservam fichas e sessoes existentes, mas nao podem ser i
 | PUT | `/workouts/sheets/{sheetId}` | Edita ficha |
 | DELETE | `/workouts/sheets/{sheetId}` | Arquiva ficha |
 
-Uma ficha possui exercicios ordenados e cada exercicio deve possuir ao menos uma serie planejada com repeticoes positivas.
+Uma ficha possui exercicios ordenados e cada exercicio deve possuir ao menos uma serie planejada com repeticoes positivas. Ela pode conter ate dois grupos musculares opcionais, usados pelo frontend para filtrar o catalogo ao adicionar exercicios.
 
 ```json
 {
