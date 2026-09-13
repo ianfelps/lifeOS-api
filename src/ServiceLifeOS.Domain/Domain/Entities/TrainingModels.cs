@@ -5,6 +5,8 @@ public sealed class Exercise
     public Guid Id { get; set; } = Guid.NewGuid();
     public string UserId { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public MuscleGroup PrimaryMuscleGroup { get; set; }
+    public MuscleGroup? SecondaryMuscleGroup { get; set; }
     public bool Archived { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
@@ -15,6 +17,8 @@ public sealed class WorkoutSheet
     public Guid Id { get; set; } = Guid.NewGuid();
     public string UserId { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public MuscleGroup? PrimaryMuscleGroup { get; set; }
+    public MuscleGroup? SecondaryMuscleGroup { get; set; }
     public bool Archived { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

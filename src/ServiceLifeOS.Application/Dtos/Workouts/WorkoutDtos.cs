@@ -5,12 +5,16 @@ namespace ServiceLifeOS.Dtos.Workouts;
 public sealed class ExerciseRequestDto
 {
     public string Name { get; set; } = string.Empty;
+    public MuscleGroup PrimaryMuscleGroup { get; set; }
+    public MuscleGroup? SecondaryMuscleGroup { get; set; }
 }
 
 public sealed class ExerciseResponseDto
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
+    public MuscleGroup PrimaryMuscleGroup { get; set; }
+    public MuscleGroup? SecondaryMuscleGroup { get; set; }
     public bool Archived { get; set; }
 }
 
@@ -28,6 +32,7 @@ public sealed class WorkoutSheetExerciseRequestDto
 public sealed class WorkoutSheetRequestDto
 {
     public string Name { get; set; } = string.Empty;
+    public IReadOnlyCollection<MuscleGroup> MuscleGroups { get; set; } = [];
     public IReadOnlyCollection<WorkoutSheetExerciseRequestDto> Exercises { get; set; } = [];
 }
 
@@ -51,6 +56,7 @@ public sealed class WorkoutSheetResponseDto
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
+    public IReadOnlyCollection<MuscleGroup> MuscleGroups { get; set; } = [];
     public bool Archived { get; set; }
     public IReadOnlyCollection<WorkoutSheetExerciseResponseDto> Exercises { get; set; } = [];
 }

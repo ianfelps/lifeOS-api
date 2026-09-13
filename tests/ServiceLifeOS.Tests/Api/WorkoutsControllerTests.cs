@@ -18,7 +18,9 @@ public sealed class WorkoutsControllerTests
             new WorkoutService(repository, new FakeAuditLogRepository(), new FakeUnitOfWork()),
             new FakeCurrentUser());
 
-        var result = await controller.CreateExercise(new() { Name = "Bench press" }, CancellationToken.None);
+        var result = await controller.CreateExercise(
+            new() { Name = "Bench press", PrimaryMuscleGroup = MuscleGroup.Chest },
+            CancellationToken.None);
 
         Assert.IsType<CreatedResult>(result.Result);
         Assert.Equal("user-1", Assert.Single(repository.Exercises).UserId);

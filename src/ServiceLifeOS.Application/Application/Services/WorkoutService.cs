@@ -42,11 +42,14 @@ public sealed class WorkoutService
         CancellationToken cancellationToken = default)
     {
         ValidateName(request.Name, "Exercise");
+        ValidateExerciseMuscleGroups(request);
         var now = DateTime.UtcNow;
         var value = new Exercise
         {
             UserId = userId,
             Name = request.Name.Trim(),
+            PrimaryMuscleGroup = request.PrimaryMuscleGroup,
+            SecondaryMuscleGroup = request.SecondaryMuscleGroup,
             CreatedAt = now,
             UpdatedAt = now
         };
@@ -64,9 +67,12 @@ public sealed class WorkoutService
         CancellationToken cancellationToken = default)
     {
         ValidateName(request.Name, "Exercise");
+        ValidateExerciseMuscleGroups(request);
         var value = await RequiredExerciseAsync(userId, exerciseId, cancellationToken);
         var previous = value.Name;
         value.Name = request.Name.Trim();
+        value.PrimaryMuscleGroup = request.PrimaryMuscleGroup;
+        value.SecondaryMuscleGroup = request.SecondaryMuscleGroup;
         value.UpdatedAt = DateTime.UtcNow;
         await AuditAsync(userId, AuditAction.Updated, "Exercise", value.Id, previous, value, value.UpdatedAt, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -113,7 +119,15 @@ public sealed class WorkoutService
     {
         await ValidateSheetAsync(userId, request, cancellationToken);
         var now = DateTime.UtcNow;
-        var value = new WorkoutSheet { UserId = userId, Name = request.Name.Trim(), CreatedAt = now, UpdatedAt = now };
+        var value = new WorkoutSheet
+        {
+            UserId = userId,
+            Name = request.Name.Trim(),
+            PrimaryMuscleGroup = GetMuscleGroup(request.MuscleGroups, 0),
+            SecondaryMuscleGroup = GetMuscleGroup(request.MuscleGroups, 1),
+            CreatedAt = now,
+            UpdatedAt = now
+        };
         await _workouts.AddAsync(value, cancellationToken);
         await AddSheetContentAsync(value.Id, request.Exercises, cancellationToken);
         await AuditAsync(userId, AuditAction.Created, "WorkoutSheet", value.Id, null, value, now, cancellationToken);
@@ -133,6 +147,8 @@ public sealed class WorkoutService
         }
 
         value.Name = request.Name.Trim();
+        value.PrimaryMuscleGroup = GetMuscleGroup(request.MuscleGroups, 0);
+        value.SecondaryMuscleGroup = GetMuscleGroup(request.MuscleGroups, 1);
         value.UpdatedAt = DateTime.UtcNow;
         await AddSheetContentAsync(value.Id, request.Exercises, cancellationToken);
         await AuditAsync(userId, AuditAction.Updated, "WorkoutSheet", value.Id, previous, value, value.UpdatedAt, cancellationToken);
@@ -390,11 +406,36 @@ public sealed class WorkoutService
     private async Task ValidateSheetAsync(string userId, WorkoutSheetRequestDto request, CancellationToken cancellationToken)
     {
         ValidateName(request.Name, "Workout sheet");
+        ValidateMuscleGroups(request.MuscleGroups);
         if (request.Exercises.Count == 0 || request.Exercises.Select(x => x.ExerciseId).Distinct().Count() != request.Exercises.Count || request.Exercises.Any(x => x.Sets.Count == 0 || x.Sets.Any(y => y.TargetRepetitions < 1))) throw new ArgumentException("Workout sheet exercises are invalid.");
         foreach (var requestExercise in request.Exercises)
         {
             if ((await RequiredExerciseAsync(userId, requestExercise.ExerciseId, cancellationToken)).Archived) throw new ArgumentException("Archived exercises cannot be used in workout sheets.");
         }
+    }
+    private static void ValidateMuscleGroups(IReadOnlyCollection<MuscleGroup> groups)
+    {
+        if (groups.Count > 2 || groups.Distinct().Count() != groups.Count ||
+            groups.Any(group => group == MuscleGroup.Other || !Enum.IsDefined(group)))
+        {
+            throw new ArgumentException("Workout sheet muscle groups are invalid.");
+        }
+    }
+    private static void ValidateExerciseMuscleGroups(ExerciseRequestDto request)
+    {
+        if (request.PrimaryMuscleGroup == MuscleGroup.Other ||
+            !Enum.IsDefined(request.PrimaryMuscleGroup) ||
+            (request.SecondaryMuscleGroup.HasValue &&
+             (request.SecondaryMuscleGroup == MuscleGroup.Other ||
+              !Enum.IsDefined(request.SecondaryMuscleGroup.Value) ||
+              request.SecondaryMuscleGroup == request.PrimaryMuscleGroup)))
+        {
+            throw new ArgumentException("Exercise muscle groups are invalid.");
+        }
+    }
+    private static MuscleGroup? GetMuscleGroup(IReadOnlyCollection<MuscleGroup> groups, int index)
+    {
+        return groups.Skip(index).Select(group => (MuscleGroup?)group).FirstOrDefault();
     }
 
     private async Task ValidateSessionExercisesAsync(string userId, IReadOnlyCollection<WorkoutSessionExerciseRequestDto> exercises, bool requireExercises, CancellationToken cancellationToken)
@@ -423,6 +464,7 @@ public sealed class WorkoutService
             Id = value.Id,
             Name = value.Name,
             Archived = value.Archived,
+            MuscleGroups = [.. new[] { value.PrimaryMuscleGroup, value.SecondaryMuscleGroup }.OfType<MuscleGroup>()],
             Exercises = exercises.Select(x => new WorkoutSheetExerciseResponseDto
             {
                 Id = x.Id,
@@ -512,7 +554,14 @@ public sealed class WorkoutService
         }
     }
     private async Task AuditAsync(string userId, AuditAction action, string resourceType, Guid resourceId, object? previous, object? current, DateTime now, CancellationToken cancellationToken) => await _auditLogs.CreateAsync(new AuditLog { UserId = userId, Action = action, ResourceType = resourceType, ResourceId = resourceId, PreviousValues = previous is null ? null : JsonSerializer.Serialize(previous), CurrentValues = current is null ? null : JsonSerializer.Serialize(current), CreatedAt = now }, cancellationToken);
-    private static ExerciseResponseDto MapExercise(Exercise value) => new() { Id = value.Id, Name = value.Name, Archived = value.Archived };
+    private static ExerciseResponseDto MapExercise(Exercise value) => new()
+    {
+        Id = value.Id,
+        Name = value.Name,
+        PrimaryMuscleGroup = value.PrimaryMuscleGroup,
+        SecondaryMuscleGroup = value.SecondaryMuscleGroup,
+        Archived = value.Archived
+    };
     private static void ValidateName(string value, string resource) { if (string.IsNullOrWhiteSpace(value) || value.Trim().Length > 120) throw new ArgumentException($"{resource} name is invalid."); }
     private static void ValidateQuery(WorkoutSessionQueryDto query) { if (query.Page < 1 || query.PageSize is < 1 or > 100 || query.From > query.To || (query.Status.HasValue && !Enum.IsDefined(query.Status.Value))) throw new ArgumentException("Workout session query is invalid."); }
 }
