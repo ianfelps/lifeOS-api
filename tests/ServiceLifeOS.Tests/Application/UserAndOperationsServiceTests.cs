@@ -75,6 +75,74 @@ public sealed class UserAndOperationsServiceTests
     }
 
     [Fact]
+    public async Task UpdateIdentity_TrimsValuesAndWritesAuditLog()
+    {
+        var user = new AppUser
+        {
+            Id = "user-1",
+            UserName = "user",
+            DisplayName = "User",
+            Active = true
+        };
+        var users = new FakeUserRepository(user);
+        var auditLogs = new FakeAuditLogRepository();
+        var service = new UserService(
+            users,
+            new FakeUserPreferenceRepository(),
+            new FakeUserSessionRepository(),
+            auditLogs,
+            new FakePasswordHasher(),
+            new FakeUnitOfWork());
+
+        var result = await service.UpdateIdentityAsync("user-1", new()
+        {
+            UserName = " updated-user ",
+            DisplayName = " Updated User "
+        });
+
+        var auditLog = Assert.Single(auditLogs.Items);
+        Assert.Equal("updated-user", result.UserName);
+        Assert.Equal("Updated User", result.DisplayName);
+        Assert.Equal("updated-user", user.UserName);
+        Assert.Equal("Updated User", user.DisplayName);
+        Assert.Equal(AuditAction.Updated, auditLog.Action);
+        Assert.Equal("User", auditLog.ResourceType);
+        Assert.Contains("\"UserName\":\"user\"", auditLog.PreviousValues);
+        Assert.Contains("\"UserName\":\"updated-user\"", auditLog.CurrentValues);
+    }
+
+    [Fact]
+    public async Task UpdateIdentity_RejectsAUserNameOwnedByAnotherUser()
+    {
+        var users = new FakeUserRepository(new AppUser
+        {
+            Id = "user-1",
+            UserName = "user",
+            DisplayName = "User",
+            Active = true
+        })
+        {
+            ExistingUser = new AppUser { Id = "user-2", UserName = "unavailable" }
+        };
+        var service = new UserService(
+            users,
+            new FakeUserPreferenceRepository(),
+            new FakeUserSessionRepository(),
+            new FakeAuditLogRepository(),
+            new FakePasswordHasher(),
+            new FakeUnitOfWork());
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.UpdateIdentityAsync("user-1", new()
+            {
+                UserName = "unavailable",
+                DisplayName = "Updated User"
+            }));
+
+        Assert.Equal("User name is already in use.", exception.Message);
+    }
+
+    [Fact]
     public async Task GetAuditLogs_MapsTheFilteredPage()
     {
         var auditLogs = new FakeAuditLogRepository
@@ -122,6 +190,8 @@ public sealed class UserAndOperationsServiceTests
 
         public AppUser? User { get; }
 
+        public AppUser? ExistingUser { get; set; }
+
         public Task<AppUser?> GetActiveByUserNameAsync(string userName, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(User);
@@ -132,11 +202,33 @@ public sealed class UserAndOperationsServiceTests
             return Task.FromResult(User);
         }
 
+        public Task<AppUser?> GetByUserNameAsync(string userName, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(ExistingUser ?? User);
+        }
+
         public Task UpdatePasswordHashAsync(string userId, string passwordHash, DateTime updatedAt, CancellationToken cancellationToken = default)
         {
             if (User is not null)
             {
                 User.PasswordHash = passwordHash;
+                User.UpdatedAt = updatedAt;
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateIdentityAsync(
+            string userId,
+            string userName,
+            string displayName,
+            DateTime updatedAt,
+            CancellationToken cancellationToken = default)
+        {
+            if (User is not null)
+            {
+                User.UserName = userName;
+                User.DisplayName = displayName;
                 User.UpdatedAt = updatedAt;
             }
 

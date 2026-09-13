@@ -90,6 +90,61 @@ public sealed class UserService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<UserIdentityResponseDto> UpdateIdentityAsync(
+        string userId,
+        UpdateUserIdentityRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var userName = request.UserName?.Trim();
+        var displayName = request.DisplayName?.Trim();
+        if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrWhiteSpace(displayName))
+        {
+            throw new ArgumentException("User name and display name are required.");
+        }
+        if (userName.Length > 120 || displayName.Length > 160)
+        {
+            throw new ArgumentException("User name or display name is too long.");
+        }
+
+        var user = await _users.GetActiveByIdAsync(userId, cancellationToken)
+            ?? throw new UnauthorizedAccessException("Authenticated user was not found.");
+        var existingUser = await _users.GetByUserNameAsync(userName, cancellationToken);
+        if (existingUser is not null && existingUser.Id != userId)
+        {
+            throw new InvalidOperationException("User name is already in use.");
+        }
+
+        var previousUserName = user.UserName;
+        var previousDisplayName = user.DisplayName;
+        var now = DateTime.UtcNow;
+        await _users.UpdateIdentityAsync(userId, userName, displayName, now, cancellationToken);
+        await _auditLogs.CreateAsync(new()
+        {
+            UserId = userId,
+            Action = AuditAction.Updated,
+            ResourceType = "User",
+            PreviousValues = JsonSerializer.Serialize(new
+            {
+                UserName = previousUserName,
+                DisplayName = previousDisplayName
+            }),
+            CurrentValues = JsonSerializer.Serialize(new
+            {
+                UserName = userName,
+                DisplayName = displayName
+            }),
+            CreatedAt = now
+        }, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return new()
+        {
+            UserId = userId,
+            UserName = userName,
+            DisplayName = displayName
+        };
+    }
+
     public async Task<UserPreferenceResponseDto> GetPreferenceAsync(
         string userId,
         CancellationToken cancellationToken = default)

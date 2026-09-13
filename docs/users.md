@@ -47,6 +47,25 @@ Resposta:
 }
 ```
 
+## Identidade
+
+| Metodo | Rota | Funcao |
+| --- | --- | --- |
+| PUT | `/users/me/identity` | Atualiza o nome de usuario e o nome de exibicao da conta autenticada |
+
+Exemplo de atualizacao:
+
+```json
+{
+  "userName": "ian",
+  "displayName": "Ian Felipe"
+}
+```
+
+Os dois campos sao obrigatorios apos remover espacos nas extremidades. O nome de usuario aceita no maximo 120 caracteres, o nome de exibicao aceita no maximo 160 e o nome de usuario deve ser unico, inclusive entre contas inativas. Um nome de usuario indisponivel retorna `409`.
+
+A atualizacao preserva as sessoes ativas. Tokens emitidos antes da alteracao podem manter os nomes antigos nas claims ate a proxima renovacao, mas a consulta de identidade retorna imediatamente os valores atuais. A alteracao gera um evento `Updated` em `AuditLog`, sem registrar senha, token ou outros dados sensiveis.
+
 ## Senha
 
 | Metodo | Rota | Funcao |
