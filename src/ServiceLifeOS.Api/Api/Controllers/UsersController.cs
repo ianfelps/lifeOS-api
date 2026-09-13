@@ -44,6 +44,32 @@ public sealed class UsersController : ControllerBase
         }
     }
 
+    [HttpPut("identity")]
+    public async Task<ActionResult<UserIdentityResponseDto>> UpdateIdentity(
+        UpdateUserIdentityRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _userService.UpdateIdentityAsync(
+                _currentUser.UserId,
+                request,
+                cancellationToken));
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return Unauthorized(new { message = exception.Message });
+        }
+        catch (ArgumentException exception)
+        {
+            return BadRequest(new { message = exception.Message });
+        }
+        catch (InvalidOperationException exception)
+        {
+            return Conflict(new { message = exception.Message });
+        }
+    }
+
     [HttpGet("preferences")]
     public async Task<ActionResult<UserPreferenceResponseDto>> GetPreferences(
         CancellationToken cancellationToken)

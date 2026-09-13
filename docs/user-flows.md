@@ -140,6 +140,12 @@ Este guia descreve as jornadas principais da API. Ele complementa os contratos d
 
 ## 7. Preferencias e Seguranca
 
+### Atualizar identidade
+
+1. O frontend envia `userName` e `displayName` para `PUT /users/me/identity`.
+2. A API remove espacos nas extremidades, valida os campos e garante a unicidade do nome de usuario.
+3. A resposta retorna a identidade atualizada; as sessoes ativas permanecem validas.
+
 ### Preferencia de carga
 
 1. O frontend consulta `GET /users/me/preferences`.

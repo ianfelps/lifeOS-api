@@ -165,9 +165,24 @@ public sealed class AuthServiceTests
             return Task.FromResult<AppUser?>(_user);
         }
 
+        public Task<AppUser?> GetByUserNameAsync(string userName, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<AppUser?>(_user);
+        }
+
         public Task UpdatePasswordHashAsync(
             string userId,
             string passwordHash,
+            DateTime updatedAt,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateIdentityAsync(
+            string userId,
+            string userName,
+            string displayName,
             DateTime updatedAt,
             CancellationToken cancellationToken = default)
         {

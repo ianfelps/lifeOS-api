@@ -40,6 +40,21 @@ public sealed class UsersControllerTests
     }
 
     [Fact]
+    public async Task UpdateIdentity_ReturnsUpdatedIdentity()
+    {
+        var controller = CreateController(new UserPreference { UserId = "user-1" });
+
+        var result = await controller.UpdateIdentity(
+            new() { UserName = "updated-user", DisplayName = "Updated User" },
+            CancellationToken.None);
+
+        var response = Assert.IsType<OkObjectResult>(result.Result);
+        var identity = Assert.IsType<UserIdentityResponseDto>(response.Value);
+        Assert.Equal("updated-user", identity.UserName);
+        Assert.Equal("Updated User", identity.DisplayName);
+    }
+
+    [Fact]
     public async Task ChangePassword_ReturnsUnauthorizedForInvalidCurrentPassword()
     {
         var controller = CreateController(new UserPreference { UserId = "user-1" });
@@ -110,6 +125,11 @@ public sealed class UsersControllerTests
             return Task.FromResult<AppUser?>(_user);
         }
 
+        public Task<AppUser?> GetByUserNameAsync(string userName, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<AppUser?>(_user);
+        }
+
         public Task UpdatePasswordHashAsync(
             string userId,
             string passwordHash,
@@ -117,6 +137,19 @@ public sealed class UsersControllerTests
             CancellationToken cancellationToken = default)
         {
             _user.PasswordHash = passwordHash;
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateIdentityAsync(
+            string userId,
+            string userName,
+            string displayName,
+            DateTime updatedAt,
+            CancellationToken cancellationToken = default)
+        {
+            _user.UserName = userName;
+            _user.DisplayName = displayName;
+            _user.UpdatedAt = updatedAt;
             return Task.CompletedTask;
         }
     }

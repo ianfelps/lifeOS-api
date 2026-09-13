@@ -80,7 +80,7 @@ Todas as rotas, exceto `GET /health`, `POST /auth/register` e `POST /auth/login`
 | --- | --- | --- |
 | Autenticação | `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`, `GET /auth/me` | Código e OpenAPI |
 | Dashboard | `GET /dashboard` | [`docs/user-flows.md`](docs/user-flows.md) |
-| Usuário | `/users/me/preferences`, `/users/me/password`, `/users/me/sessions/others` | [`docs/users.md`](docs/users.md) |
+| Usuário | `/users/me/identity`, `/users/me/preferences`, `/users/me/password`, `/users/me/sessions/others` | [`docs/users.md`](docs/users.md) |
 | Operações | `GET /operations/audit-logs` | Código e OpenAPI |
 | Finanças | `/finances/categories`, `/finances/transactions`, `/finances/recurrences`, `/finances/installment-purchases`, `/finances/reports` | [`docs/finances.md`](docs/finances.md) |
 | Hábitos | `/habits`, `/habits/reminders` | [`docs/habits.md`](docs/habits.md) |

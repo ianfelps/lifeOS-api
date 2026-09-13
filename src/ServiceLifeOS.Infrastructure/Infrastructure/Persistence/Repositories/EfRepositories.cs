@@ -53,7 +53,16 @@ public sealed class UserRepository : IUserRepository
             .AsNoTracking()
             .FirstOrDefaultAsync(
                 x => x.Id == userId && x.Active,
-                cancellationToken);
+             cancellationToken);
+    }
+
+    public Task<AppUser?> GetByUserNameAsync(
+        string userName,
+        CancellationToken cancellationToken = default)
+    {
+        return _db.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.UserName == userName, cancellationToken);
     }
 
     public async Task UpdatePasswordHashAsync(
@@ -67,6 +76,23 @@ public sealed class UserRepository : IUserRepository
             .ExecuteUpdateAsync(
                 setters => setters
                     .SetProperty(x => x.PasswordHash, passwordHash)
+                    .SetProperty(x => x.UpdatedAt, updatedAt),
+                cancellationToken);
+    }
+
+    public async Task UpdateIdentityAsync(
+        string userId,
+        string userName,
+        string displayName,
+        DateTime updatedAt,
+        CancellationToken cancellationToken = default)
+    {
+        await _db.Users
+            .Where(x => x.Id == userId && x.Active)
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(x => x.UserName, userName)
+                    .SetProperty(x => x.DisplayName, displayName)
                     .SetProperty(x => x.UpdatedAt, updatedAt),
                 cancellationToken);
     }

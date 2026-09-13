@@ -21,9 +21,20 @@ public interface IUserRepository
         string userId,
         CancellationToken cancellationToken = default);
 
+    Task<AppUser?> GetByUserNameAsync(
+        string userName,
+        CancellationToken cancellationToken = default);
+
     Task UpdatePasswordHashAsync(
         string userId,
         string passwordHash,
+        DateTime updatedAt,
+        CancellationToken cancellationToken = default);
+
+    Task UpdateIdentityAsync(
+        string userId,
+        string userName,
+        string displayName,
         DateTime updatedAt,
         CancellationToken cancellationToken = default);
 }
