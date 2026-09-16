@@ -63,9 +63,11 @@ Um mes somente e avaliado apos encerrar. Ele e positivo quando, simultaneamente,
 | --- | --- | --- |
 | GET, PUT | `/gamification/xp-rules` | Consulta ou substitui valores de XP por evento |
 | GET, PUT | `/gamification/level-progression` | Consulta ou altera `baseXp` e `incrementPerLevel` |
-| GET | `/gamification/badges` | Lista badges bloqueados e desbloqueados |
+| GET | `/gamification/badges` | Lista paginada de badges bloqueados e desbloqueados |
 | POST | `/gamification/badges` | Cria badge e criterios |
 | PUT | `/gamification/badges/{badgeId}` | Edita badge e criterios |
 | DELETE | `/gamification/badges/{badgeId}` | Arquiva badge |
 
 Os criterios de um badge sao cumulativos: todos devem ser atendidos. Os tipos disponiveis sao `Xp`, `Level`, `HabitCompletionCount`, `WeeklyHabitGoalCount`, `WorkoutCompletionCount`, `TransactionConfirmationCount`, `GoalCompletionCount` e `PositiveMonthCount`. Criterios de conclusao de habito, treino, transacao e meta podem restringir a contagem ao respectivo `habitId`, `exerciseId`, `financialCategoryId` ou `goalId`. A API reconcilia desbloqueios apos cada evento relevante, removendo `UserBadge` quando uma reversao elimina a elegibilidade.
+
+A listagem de badges aceita `page`, `pageSize` e `includeArchived`. A resposta usa `items`, `page`, `pageSize` e `totalCount`.

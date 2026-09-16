@@ -21,7 +21,7 @@ Copie `.env.example` para `.env` somente no ambiente local. O arquivo `.env` e i
 | `Jwt__Audience` | Audiencia do JWT. |
 | `Jwt__Secret` | Segredo com no minimo 32 caracteres. |
 | `Jwt__AccessTokenExpirationMinutes` | Validade do access token, com padrao de 15 minutos. |
-| `Jwt__RefreshTokenExpirationDays` | Validade do refresh token rotativo, com padrao de 30 dias. |
+| `Jwt__RefreshTokenExpirationDays` | Validade do refresh token rotativo, com padrao de 7 dias. |
 | `Cors__AllowedOrigins__0` | Origem HTTPS permitida, atualmente `https://lifeos.vercel.app`. |
 | `RateLimiting__LoginPermitLimit` | Limite de login por IP. |
 | `RateLimiting__LoginWindowMinutes` | Janela do limite de login. |

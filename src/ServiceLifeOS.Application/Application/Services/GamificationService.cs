@@ -339,18 +339,33 @@ public sealed class GamificationService
         return await GetLevelRuleAsync(userId, cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<BadgeResponseDto>> GetBadgesAsync(string userId, bool includeArchived, CancellationToken cancellationToken = default)
+    public async Task<PagedBadgeResponseDto> GetBadgesAsync(
+        string userId,
+        BadgeQueryDto query,
+        CancellationToken cancellationToken = default)
     {
+        ValidatePage(query.Page, query.PageSize);
         await RefreshAsync(userId, cancellationToken);
         var badges = (await _gamification.GetBadgesAsync(userId, cancellationToken))
-            .Where(x => includeArchived || !x.Archived)
+            .Where(x => query.IncludeArchived || !x.Archived)
             .OrderBy(x => x.Name)
+            .ThenBy(x => x.Id)
             .ToArray();
         var criteria = await _gamification.GetBadgeCriteriaAsync(
             badges.Select(x => x.Id).ToArray(),
             cancellationToken);
         var unlocked = await _gamification.GetUserBadgesAsync(userId, cancellationToken);
-        return badges.Select(x => MapBadge(x, criteria, unlocked)).ToArray();
+        return new()
+        {
+            Items = badges
+                .Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .Select(x => MapBadge(x, criteria, unlocked))
+                .ToArray(),
+            Page = query.Page,
+            PageSize = query.PageSize,
+            TotalCount = badges.Length
+        };
     }
 
     public async Task<BadgeResponseDto> CreateBadgeAsync(string userId, BadgeRequestDto request, CancellationToken cancellationToken = default)

@@ -131,3 +131,18 @@ public sealed class BadgeResponseDto
     public DateTime? UnlockedAt { get; set; }
     public IReadOnlyCollection<BadgeCriterionRequestDto> Criteria { get; set; } = [];
 }
+
+public sealed class BadgeQueryDto
+{
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 50;
+    public bool IncludeArchived { get; set; }
+}
+
+public sealed class PagedBadgeResponseDto
+{
+    public IReadOnlyCollection<BadgeResponseDto> Items { get; set; } = [];
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalCount { get; set; }
+}
