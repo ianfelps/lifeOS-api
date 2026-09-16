@@ -128,11 +128,11 @@ public sealed class GamificationController : ControllerBase
     }
 
     [HttpGet("badges")]
-    public Task<IReadOnlyCollection<BadgeResponseDto>> GetBadges(
-        [FromQuery] bool includeArchived,
+    public Task<PagedBadgeResponseDto> GetBadges(
+        [FromQuery] BadgeQueryDto query,
         CancellationToken cancellationToken)
     {
-        return _gamification.GetBadgesAsync(_currentUser.UserId, includeArchived, cancellationToken);
+        return _gamification.GetBadgesAsync(_currentUser.UserId, query, cancellationToken);
     }
 
     [HttpPost("badges")]

@@ -35,6 +35,29 @@ public sealed class GamificationServiceTests
         Assert.Null(profile.Badges.Single().UnlockedAt);
     }
 
+    [Fact]
+    public async Task GetBadges_PaginatesActiveBadgesInNameOrder()
+    {
+        var repository = new FakeGamificationRepository();
+        repository.Badges.AddRange(
+        [
+            new() { UserId = "user-1", Name = "Delta", Description = "" },
+            new() { UserId = "user-1", Name = "Archived", Description = "", Archived = true },
+            new() { UserId = "user-1", Name = "Alpha", Description = "" },
+            new() { UserId = "user-1", Name = "Charlie", Description = "" }
+        ]);
+        var service = new GamificationService(repository, new FakeUnitOfWork());
+
+        var result = await service.GetBadgesAsync(
+            "user-1",
+            new BadgeQueryDto { Page = 2, PageSize = 1 });
+
+        Assert.Equal(3, result.TotalCount);
+        Assert.Equal(2, result.Page);
+        Assert.Equal(1, result.PageSize);
+        Assert.Equal("Charlie", Assert.Single(result.Items).Name);
+    }
+
     private sealed class FakeGamificationRepository : IGamificationRepository
     {
         public List<Goal> Goals { get; } = [];
