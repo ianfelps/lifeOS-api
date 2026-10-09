@@ -68,6 +68,40 @@ public sealed class WorkoutServiceTests
     }
 
     [Fact]
+    public async Task StartSession_UsesMatchingSetFromMostRecentCompletedSessionAsPreviousWeight()
+    {
+        var repository = new FakeWorkoutRepository();
+        var exercise = repository.AddExercise();
+        var service = CreateService(repository);
+        var previous = await service.StartSessionAsync(
+            "user-1",
+            new()
+            {
+                Exercises = [new()
+                {
+                    ExerciseId = exercise.Id,
+                    Sets = [new() { Weight = 60, WeightUnit = WeightUnit.Kilograms, Repetitions = 10 }]
+                }]
+            });
+        await service.CompleteSessionAsync("user-1", previous.Id);
+
+        var session = await service.StartSessionAsync(
+            "user-1",
+            new()
+            {
+                Exercises = [new()
+                {
+                    ExerciseId = exercise.Id,
+                    Sets = [new() { Repetitions = 8 }]
+                }]
+            });
+
+        var set = Assert.Single(Assert.Single(session.Exercises).Sets);
+        Assert.Equal(60, set.PreviousWeight);
+        Assert.Equal(WeightUnit.Kilograms, set.PreviousWeightUnit);
+    }
+
+    [Fact]
     public async Task GetExerciseProgress_SeparatesUnitsAndIgnoresCancelledSessions()
     {
         var repository = new FakeWorkoutRepository();

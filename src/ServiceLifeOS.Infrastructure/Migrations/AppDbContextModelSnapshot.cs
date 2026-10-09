@@ -900,6 +900,10 @@ namespace ServiceLifeOS.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<int>("BillingCycleStartDay")
+                        .HasColumnType("integer")
+                        .HasColumnName("billing_cycle_start_day");
+
                     b.Property<int>("PreferredWeightUnit")
                         .HasColumnType("integer")
                         .HasColumnName("preferred_weight_unit");

@@ -28,11 +28,13 @@ public sealed class UserIdentityResponseDto
 public sealed class UserPreferenceResponseDto
 {
     public WeightUnit PreferredWeightUnit { get; set; }
+    public int BillingCycleStartDay { get; set; }
 }
 
 public sealed class UpdateUserPreferenceRequestDto
 {
     public WeightUnit PreferredWeightUnit { get; set; }
+    public int BillingCycleStartDay { get; set; }
 }
 
 public sealed class RevokeOtherSessionsResponseDto

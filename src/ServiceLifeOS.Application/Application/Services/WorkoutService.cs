@@ -217,7 +217,9 @@ public sealed class WorkoutService
         await AuditAsync(userId, AuditAction.Created, "WorkoutSession", session.Id, null, session, now, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         if (_gamification is not null) await _gamification.RefreshAsync(userId, cancellationToken);
-        return await MapSessionAsync(session, cancellationToken);
+        var response = await MapSessionAsync(session, cancellationToken);
+        await PopulatePreviousWeightsAsync(userId, response, cancellationToken);
+        return response;
     }
     public async Task<WorkoutSessionResponseDto> UpdateSessionAsync(string userId, Guid sessionId, UpdateWorkoutSessionRequestDto request, CancellationToken cancellationToken = default)
     {
@@ -509,6 +511,50 @@ public sealed class WorkoutService
                 }).ToArray()
             }).ToArray()
         };
+    }
+    private async Task PopulatePreviousWeightsAsync(
+        string userId,
+        WorkoutSessionResponseDto session,
+        CancellationToken cancellationToken)
+    {
+        var previousSessions = (await _workouts.GetSessionsAsync(userId, cancellationToken))
+            .Where(x => x.Id != session.Id &&
+                        x.Status == WorkoutSessionStatus.Completed &&
+                        x.DeletedAt is null &&
+                        x.CompletedAt.HasValue)
+            .OrderByDescending(x => x.CompletedAt)
+            .ToArray();
+        foreach (var exercise in session.Exercises.Where(x => x.ExerciseId.HasValue))
+        {
+            foreach (var previousSession in previousSessions)
+            {
+                var previousExercise = (await _workouts.GetSessionExercisesAsync(
+                    previousSession.Id,
+                    cancellationToken)).FirstOrDefault(x => x.ExerciseId == exercise.ExerciseId);
+                if (previousExercise is null)
+                {
+                    continue;
+                }
+
+                var previousSets = await _workouts.GetSessionSetsAsync(
+                    [previousExercise.Id],
+                    cancellationToken);
+                foreach (var set in exercise.Sets)
+                {
+                    var previousSet = previousSets.FirstOrDefault(x =>
+                        x.Position == set.Position &&
+                        x.Weight.HasValue &&
+                        x.WeightUnit.HasValue);
+                    if (previousSet is not null)
+                    {
+                        set.PreviousWeight = previousSet.Weight;
+                        set.PreviousWeightUnit = previousSet.WeightUnit;
+                    }
+                }
+
+                break;
+            }
+        }
     }
     private async Task SyncXpAsync(string userId, WorkoutSession session, DateTime now, CancellationToken cancellationToken)
     {

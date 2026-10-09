@@ -151,7 +151,11 @@ public sealed class UserService
     {
         var preference = await _preferences.GetByUserIdAsync(userId, cancellationToken)
             ?? throw new InvalidOperationException("User preference was not found.");
-        return new() { PreferredWeightUnit = preference.PreferredWeightUnit };
+        return new()
+        {
+            PreferredWeightUnit = preference.PreferredWeightUnit,
+            BillingCycleStartDay = preference.BillingCycleStartDay
+        };
     }
 
     public async Task<UserPreferenceResponseDto> UpdatePreferenceAsync(
@@ -159,7 +163,8 @@ public sealed class UserService
         UpdateUserPreferenceRequestDto request,
         CancellationToken cancellationToken = default)
     {
-        if (!Enum.IsDefined(request.PreferredWeightUnit))
+        if (!Enum.IsDefined(request.PreferredWeightUnit) ||
+            (request.BillingCycleStartDay != 0 && request.BillingCycleStartDay is < 1 or > 28))
         {
             throw new ArgumentException("Preferred weight unit is invalid.");
         }
@@ -167,7 +172,12 @@ public sealed class UserService
         var preference = await _preferences.GetByUserIdAsync(userId, cancellationToken)
             ?? throw new InvalidOperationException("User preference was not found.");
         var previousWeightUnit = preference.PreferredWeightUnit;
+        var previousBillingCycleStartDay = preference.BillingCycleStartDay;
         preference.PreferredWeightUnit = request.PreferredWeightUnit;
+        if (request.BillingCycleStartDay != 0)
+        {
+            preference.BillingCycleStartDay = request.BillingCycleStartDay;
+        }
         preference.UpdatedAt = DateTime.UtcNow;
         await _auditLogs.CreateAsync(new()
         {
@@ -175,13 +185,25 @@ public sealed class UserService
             Action = AuditAction.Updated,
             ResourceType = "UserPreference",
             ResourceId = preference.Id,
-            PreviousValues = JsonSerializer.Serialize(new { PreferredWeightUnit = previousWeightUnit }),
-            CurrentValues = JsonSerializer.Serialize(new { PreferredWeightUnit = preference.PreferredWeightUnit }),
+            PreviousValues = JsonSerializer.Serialize(new
+            {
+                PreferredWeightUnit = previousWeightUnit,
+                BillingCycleStartDay = previousBillingCycleStartDay
+            }),
+            CurrentValues = JsonSerializer.Serialize(new
+            {
+                PreferredWeightUnit = preference.PreferredWeightUnit,
+                BillingCycleStartDay = preference.BillingCycleStartDay
+            }),
             CreatedAt = preference.UpdatedAt
         }, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new() { PreferredWeightUnit = preference.PreferredWeightUnit };
+        return new()
+        {
+            PreferredWeightUnit = preference.PreferredWeightUnit,
+            BillingCycleStartDay = preference.BillingCycleStartDay
+        };
     }
 
     public async Task<RevokeOtherSessionsResponseDto> RevokeOtherSessionsAsync(

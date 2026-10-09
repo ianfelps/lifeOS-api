@@ -93,6 +93,8 @@ public sealed class WorkoutSessionSetResponseDto
     public decimal? Weight { get; set; }
     public WeightUnit? WeightUnit { get; set; }
     public int? Repetitions { get; set; }
+    public decimal? PreviousWeight { get; set; }
+    public WeightUnit? PreviousWeightUnit { get; set; }
 }
 
 public sealed class WorkoutSessionExerciseResponseDto

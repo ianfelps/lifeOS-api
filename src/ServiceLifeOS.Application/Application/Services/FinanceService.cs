@@ -422,35 +422,69 @@ public sealed class FinanceService
         return MapPurchase(purchase, installments);
     }
 
-    public async Task<MonthlySummaryResponseDto> GetMonthlySummaryAsync(string userId, DateOnly month, CancellationToken cancellationToken = default)
+    public async Task<MonthlySummaryResponseDto> GetMonthlySummaryAsync(
+        string userId,
+        DateOnly month,
+        int billingCycleStartDay = 1,
+        CancellationToken cancellationToken = default)
     {
-        var normalizedMonth = FirstDayOfMonth(month);
-        await MaterializeRecurringTransactionsAsync(userId, LastDayOfMonth(normalizedMonth), cancellationToken);
-        var transactions = (await _finances.GetTransactionsAsync(userId, cancellationToken)).Where(x => x.DeletedAt is null && FirstDayOfMonth(x.TransactionDate) == normalizedMonth).ToArray();
-        return BuildMonthlySummary(normalizedMonth, transactions);
+        ValidateBillingCycleStartDay(billingCycleStartDay);
+        var periodStart = GetBillingCycleStart(month, billingCycleStartDay);
+        var periodEnd = periodStart.AddMonths(1).AddDays(-1);
+        await MaterializeRecurringTransactionsAsync(userId, periodEnd, cancellationToken);
+        var transactions = (await _finances.GetTransactionsAsync(userId, cancellationToken))
+            .Where(x => x.DeletedAt is null && x.TransactionDate >= periodStart && x.TransactionDate <= periodEnd)
+            .ToArray();
+        return BuildMonthlySummary(periodStart, transactions);
     }
 
-    public async Task<MonthlyComparisonResponseDto> GetMonthlyComparisonAsync(string userId, DateOnly from, DateOnly to, CancellationToken cancellationToken = default)
+    public async Task<MonthlyComparisonResponseDto> GetMonthlyComparisonAsync(
+        string userId,
+        DateOnly from,
+        DateOnly to,
+        int billingCycleStartDay = 1,
+        CancellationToken cancellationToken = default)
     {
+        ValidateBillingCycleStartDay(billingCycleStartDay);
         var start = FirstDayOfMonth(from);
         var end = FirstDayOfMonth(to);
         if (start > end) throw new ArgumentException("The start month must be before the end month.");
-        await MaterializeRecurringTransactionsAsync(userId, LastDayOfMonth(end), cancellationToken);
+        var lastPeriodEnd = GetBillingCycleStart(end, billingCycleStartDay).AddMonths(1).AddDays(-1);
+        await MaterializeRecurringTransactionsAsync(userId, lastPeriodEnd, cancellationToken);
         var transactions = (await _finances.GetTransactionsAsync(userId, cancellationToken)).Where(x => x.DeletedAt is null).ToArray();
         var items = new List<MonthlySummaryResponseDto>();
-        for (var month = start; month <= end; month = month.AddMonths(1)) items.Add(BuildMonthlySummary(month, transactions.Where(x => FirstDayOfMonth(x.TransactionDate) == month)));
+        for (var month = start; month <= end; month = month.AddMonths(1))
+        {
+            var periodStart = GetBillingCycleStart(month, billingCycleStartDay);
+            var periodEnd = periodStart.AddMonths(1).AddDays(-1);
+            items.Add(BuildMonthlySummary(
+                periodStart,
+                transactions.Where(x => x.TransactionDate >= periodStart && x.TransactionDate <= periodEnd)));
+        }
         return new() { Items = items };
     }
 
-    public Task<MonthlyComparisonResponseDto> GetCashFlowProjectionAsync(string userId, DateOnly from, DateOnly to, CancellationToken cancellationToken = default)
+    public Task<MonthlyComparisonResponseDto> GetCashFlowProjectionAsync(
+        string userId,
+        DateOnly from,
+        DateOnly to,
+        int billingCycleStartDay = 1,
+        CancellationToken cancellationToken = default)
     {
-        return GetMonthlyComparisonAsync(userId, from, to, cancellationToken);
+        return GetMonthlyComparisonAsync(userId, from, to, billingCycleStartDay, cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<CategorySpendingResponseDto>> GetCategorySpendingAsync(string userId, DateOnly month, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<CategorySpendingResponseDto>> GetCategorySpendingAsync(
+        string userId,
+        DateOnly month,
+        int billingCycleStartDay = 1,
+        CancellationToken cancellationToken = default)
     {
-        var normalizedMonth = FirstDayOfMonth(month);
-        await MaterializeRecurringTransactionsAsync(userId, LastDayOfMonth(normalizedMonth), cancellationToken);
+        ValidateBillingCycleStartDay(billingCycleStartDay);
+        var periodStart = GetBillingCycleStart(month, billingCycleStartDay);
+        var periodEnd = periodStart.AddMonths(1).AddDays(-1);
+        var normalizedMonth = FirstDayOfMonth(periodStart);
+        await MaterializeRecurringTransactionsAsync(userId, periodEnd, cancellationToken);
         var categories = (await _finances.GetCategoriesAsync(userId, true, cancellationToken)).Where(x => x.Type == FinancialCategoryType.Expense).ToArray();
         var budgets = await _finances.GetBudgetsAsync(categories.Select(x => x.Id).ToArray(), cancellationToken);
         var overrides = await _finances.GetBudgetOverridesAsync(budgets.Select(x => x.Id).ToArray(), normalizedMonth, cancellationToken);
@@ -459,7 +493,7 @@ public sealed class FinanceService
         {
             var budget = SelectBudgetForMonth(budgets.Where(x => x.CategoryId == category.Id), normalizedMonth);
             decimal? amount = budget is null ? null : overrides.FirstOrDefault(x => x.CategoryBudgetId == budget.Id)?.Amount ?? budget.Amount;
-            var spent = transactions.Where(x => x.DeletedAt is null && x.Status == TransactionStatus.Confirmed && x.Type == FinancialCategoryType.Expense && x.CategoryId == category.Id && FirstDayOfMonth(x.TransactionDate) == normalizedMonth).Sum(x => x.Amount);
+            var spent = transactions.Where(x => x.DeletedAt is null && x.Status == TransactionStatus.Confirmed && x.Type == FinancialCategoryType.Expense && x.CategoryId == category.Id && x.TransactionDate >= periodStart && x.TransactionDate <= periodEnd).Sum(x => x.Amount);
             decimal? percentage = amount.HasValue ? spent / amount.Value * 100 : null;
             return new CategorySpendingResponseDto { CategoryId = category.Id, CategoryName = category.Name, Spent = spent, Budget = amount, Remaining = amount - spent, Percentage = percentage, Alert = GetBudgetAlert(percentage) };
         }).ToArray();
@@ -597,9 +631,14 @@ public sealed class FinanceService
     private static TransactionStatus EffectiveStatus(FinancialTransaction transaction) => transaction.Status == TransactionStatus.Planned && transaction.TransactionDate < LocalToday() ? TransactionStatus.Overdue : transaction.Status;
     private static BudgetAlert GetBudgetAlert(decimal? percentage) => percentage switch { null => BudgetAlert.None, > 100m => BudgetAlert.Exceeded, >= 100m => BudgetAlert.AtLimit, >= 80m => BudgetAlert.EightyPercent, _ => BudgetAlert.None };
     private static DateOnly FirstDayOfMonth(DateOnly value) => new(value.Year, value.Month, 1);
+    private static DateOnly GetBillingCycleStart(DateOnly month, int startDay) => new(month.Year, month.Month, startDay);
     private static DateOnly FirstDayOfNextMonth(DateOnly value) => FirstDayOfMonth(value).AddMonths(1);
     private static DateOnly LastDayOfMonth(DateOnly value) => FirstDayOfMonth(value).AddMonths(1).AddDays(-1);
     private static DateOnly LocalToday() => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "America/Sao_Paulo"));
+    private static void ValidateBillingCycleStartDay(int value)
+    {
+        if (value is < 1 or > 28) throw new ArgumentException("Billing cycle start day is invalid.");
+    }
     private static string? TrimOrNull(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     private static FinancialCategoryResponseDto MapCategory(FinancialCategory value) => new() { Id = value.Id, Name = value.Name, Type = value.Type, Archived = value.Archived };
     private static TransactionResponseDto MapTransaction(FinancialTransaction value) => new() { Id = value.Id, CategoryId = value.CategoryId, Amount = value.Amount, TransactionDate = value.TransactionDate, Type = value.Type, PaymentMethod = value.PaymentMethod, Status = EffectiveStatus(value), InstallmentNumber = value.InstallmentNumber, InstallmentPurchaseId = value.InstallmentPurchaseId, RecurringTransactionId = value.RecurringTransactionId, Description = value.Description };
