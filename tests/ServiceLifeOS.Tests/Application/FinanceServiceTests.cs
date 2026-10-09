@@ -235,6 +235,39 @@ public sealed class FinanceServiceTests
         Assert.Equal(100m, comparison.Items.First().ProjectedIncome);
     }
 
+    [Fact]
+    public async Task GetMonthlySummary_UsesConfiguredBillingCycle()
+    {
+        var repository = new FakeFinanceRepository();
+        repository.Transactions.AddRange([
+            new()
+            {
+                UserId = "user-1", Amount = 100, TransactionDate = new DateOnly(2026, 9, 10),
+                Type = FinancialCategoryType.Income, Status = TransactionStatus.Confirmed
+            },
+            new()
+            {
+                UserId = "user-1", Amount = 25, TransactionDate = new DateOnly(2026, 10, 9),
+                Type = FinancialCategoryType.Expense, Status = TransactionStatus.Confirmed
+            },
+            new()
+            {
+                UserId = "user-1", Amount = 50, TransactionDate = new DateOnly(2026, 10, 10),
+                Type = FinancialCategoryType.Expense, Status = TransactionStatus.Confirmed
+            }
+        ]);
+        var service = CreateService(repository);
+
+        var summary = await service.GetMonthlySummaryAsync(
+            "user-1",
+            new DateOnly(2026, 9, 1),
+            10);
+
+        Assert.Equal(new DateOnly(2026, 9, 10), summary.Month);
+        Assert.Equal(100m, summary.ConfirmedIncome);
+        Assert.Equal(25m, summary.ConfirmedExpense);
+    }
+
     private static FinanceService CreateService(FakeFinanceRepository repository)
     {
         return new FinanceService(repository, new FakeAuditLogRepository(), new FakeUnitOfWork());

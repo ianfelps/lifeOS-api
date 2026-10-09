@@ -200,26 +200,48 @@ public sealed class FinancesController : ControllerBase
     [HttpGet("reports/monthly-summary")]
     public Task<MonthlySummaryResponseDto> GetMonthlySummary(
         [FromQuery] DateOnly month,
+        [FromQuery] int billingCycleStartDay,
         CancellationToken cancellationToken) =>
-        _financeService.GetMonthlySummaryAsync(_currentUser.UserId, month, cancellationToken);
+        _financeService.GetMonthlySummaryAsync(
+            _currentUser.UserId,
+            month,
+            billingCycleStartDay == 0 ? 1 : billingCycleStartDay,
+            cancellationToken);
 
     [HttpGet("reports/monthly-comparison")]
     public Task<MonthlyComparisonResponseDto> GetMonthlyComparison(
         [FromQuery] DateOnly from,
         [FromQuery] DateOnly to,
+        [FromQuery] int billingCycleStartDay,
         CancellationToken cancellationToken) =>
-        _financeService.GetMonthlyComparisonAsync(_currentUser.UserId, from, to, cancellationToken);
+        _financeService.GetMonthlyComparisonAsync(
+            _currentUser.UserId,
+            from,
+            to,
+            billingCycleStartDay == 0 ? 1 : billingCycleStartDay,
+            cancellationToken);
 
     [HttpGet("reports/cash-flow-projection")]
     public Task<MonthlyComparisonResponseDto> GetCashFlowProjection(
         [FromQuery] DateOnly from,
         [FromQuery] DateOnly to,
+        [FromQuery] int billingCycleStartDay,
         CancellationToken cancellationToken) =>
-        _financeService.GetCashFlowProjectionAsync(_currentUser.UserId, from, to, cancellationToken);
+        _financeService.GetCashFlowProjectionAsync(
+            _currentUser.UserId,
+            from,
+            to,
+            billingCycleStartDay == 0 ? 1 : billingCycleStartDay,
+            cancellationToken);
 
     [HttpGet("reports/category-spending")]
     public Task<IReadOnlyCollection<CategorySpendingResponseDto>> GetCategorySpending(
         [FromQuery] DateOnly month,
+        [FromQuery] int billingCycleStartDay,
         CancellationToken cancellationToken) =>
-        _financeService.GetCategorySpendingAsync(_currentUser.UserId, month, cancellationToken);
+        _financeService.GetCategorySpendingAsync(
+            _currentUser.UserId,
+            month,
+            billingCycleStartDay == 0 ? 1 : billingCycleStartDay,
+            cancellationToken);
 }

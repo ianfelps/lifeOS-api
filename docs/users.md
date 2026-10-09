@@ -26,24 +26,26 @@ A senha precisa respeitar `PasswordPolicy:MinimumLength`. O endpoint retorna `20
 
 | Metodo | Rota | Funcao |
 | --- | --- | --- |
-| GET | `/users/me/preferences` | Consulta a preferencia de unidade de carga |
-| PUT | `/users/me/preferences` | Atualiza a preferencia de unidade de carga |
+| GET | `/users/me/preferences` | Consulta as preferencias de carga e ciclo financeiro |
+| PUT | `/users/me/preferences` | Atualiza as preferencias de carga e ciclo financeiro |
 
 Exemplo de atualizacao:
 
 ```json
 {
-  "preferredWeightUnit": "Pounds"
+  "preferredWeightUnit": "Pounds",
+  "billingCycleStartDay": 10
 }
 ```
 
-As unidades aceitas sao `Kilograms` e `Pounds`. A preferencia apenas sugere a unidade inicial em uma serie de treino; cada serie pode manter sua propria unidade.
+As unidades aceitas sao `Kilograms` e `Pounds`. A preferencia apenas sugere a unidade inicial em uma serie de treino; cada serie pode manter sua propria unidade. O inicio do ciclo financeiro aceita dias de 1 a 28 e define o intervalo usado pela tela de financas, por exemplo, dia 10 considera 10/09 a 09/10 para o ciclo iniciado em setembro.
 
 Resposta:
 
 ```json
 {
-  "preferredWeightUnit": "Pounds"
+  "preferredWeightUnit": "Pounds",
+  "billingCycleStartDay": 10
 }
 ```
 

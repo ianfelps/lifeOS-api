@@ -32,7 +32,7 @@ Este guia descreve as jornadas principais da API. Ele complementa os contratos d
 1. Quando o access token expira, o frontend envia `refreshToken` para `POST /auth/refresh`.
 2. A API valida a sessao, rotaciona o refresh token e retorna um novo par de tokens.
 3. Um refresh token usado novamente revoga a sessao associada para impedir replay.
-4. Falha `401` encerra a sessao local e retorna o usuario ao login.
+4. Falha `401` encerra a sessao local e retorna o usuario ao login. O refresh token permanece valido por sete dias por configuracao de ambiente, enquanto o access token curto e renovado de forma transparente.
 
 ### Restaurar sessao
 
@@ -107,7 +107,7 @@ Este guia descreve as jornadas principais da API. Ele complementa os contratos d
 ### Executar treino
 
 1. O usuario inicia por ficha ou avulso em `POST /workouts/sessions`.
-2. O frontend apresenta exercicios e series, permitindo informar carga, unidade e repeticoes.
+2. O frontend apresenta exercicios e series, permitindo informar carga, unidade e repeticoes. Para um exercicio existente, mostra como referencia a carga da mesma serie no treino concluido anterior, sem preenchimento automatico.
 3. O frontend salva alteracoes por `PUT /workouts/sessions/{sessionId}`.
 4. Ao terminar, chama `POST /workouts/sessions/{sessionId}/complete`.
 5. A API concede XP, atualiza badges e retorna a sessao concluida.
@@ -150,7 +150,7 @@ Este guia descreve as jornadas principais da API. Ele complementa os contratos d
 
 1. O frontend consulta `GET /users/me/preferences`.
 2. O usuario escolhe kg ou lb e o frontend envia `PUT /users/me/preferences`.
-3. A preferencia apenas sugere a unidade inicial; cada serie permanece independente.
+3. A preferencia apenas sugere a unidade inicial; cada serie permanece independente. Ela tambem armazena o dia inicial do ciclo financeiro, aplicado pela tela de financas aos lancamentos e relatorios.
 
 ### Alterar senha e revogar sessoes
 

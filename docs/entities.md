@@ -15,7 +15,7 @@ As entidades do MVP pertencem diretamente a `AppUser` por `UserId`. Todas as nov
 ## Usuario e operacao
 
 - `AppUser`: proprietario autenticado.
-- `UserPreference`: relacao 1:1 com o usuario; contem a unidade de carga sugerida (`kg` ou `lb`).
+- `UserPreference`: relacao 1:1 com o usuario; contem a unidade de carga sugerida (`kg` ou `lb`) e o dia inicial do ciclo financeiro.
 - `UserSession`: sessoes persistidas, com identificador de token, expiracao, revogacao e ultimo uso.
 - `AuditLog`: auditoria com ator, acao, recurso, data e snapshots anterior e posterior.
 

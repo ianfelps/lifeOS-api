@@ -46,7 +46,7 @@ Uma ficha possui exercicios ordenados e cada exercicio deve possuir ao menos uma
 | POST | `/workouts/sessions/{sessionId}/cancel` | Cancela sessao |
 | DELETE | `/workouts/sessions/{sessionId}` | Exclui logicamente sessao |
 
-`POST /workouts/sessions` aceita `workoutSheetId` ou `exercises`. Ao iniciar por ficha, exercicios, series e repeticoes planejadas sao copiados como snapshot. Uma sessao avulsa aceita nome livre por exercicio.
+`POST /workouts/sessions` aceita `workoutSheetId` ou `exercises`. Ao iniciar por ficha, exercicios, series e repeticoes planejadas sao copiados como snapshot. Uma sessao avulsa aceita nome livre por exercicio. Para exercicios do catalogo, a resposta de uma nova sessao inclui a carga da mesma posicao de serie no treino concluido mais recente, como referencia opcional para a interface.
 
 ```json
 {

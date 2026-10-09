@@ -5,6 +5,7 @@ public sealed class UserPreference
     public Guid Id { get; set; } = Guid.NewGuid();
     public string UserId { get; set; } = string.Empty;
     public WeightUnit PreferredWeightUnit { get; set; } = WeightUnit.Kilograms;
+    public int BillingCycleStartDay { get; set; } = 1;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

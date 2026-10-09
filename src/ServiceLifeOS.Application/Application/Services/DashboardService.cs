@@ -25,7 +25,10 @@ public sealed class DashboardService
         var workouts = await _workouts.GetSessionsAsync(userId, new WorkoutSessionQueryDto { PageSize = 5 }, cancellationToken);
         return new()
         {
-            Finance = await _finances.GetMonthlySummaryAsync(userId, month, cancellationToken),
+            Finance = await _finances.GetMonthlySummaryAsync(
+                userId,
+                month,
+                cancellationToken: cancellationToken),
             PendingHabits = await _habits.GetPendingHabitsAsync(userId, today, cancellationToken),
             RecentWorkouts = workouts.Items,
             Gamification = await _gamification.GetProfileAsync(userId, cancellationToken)

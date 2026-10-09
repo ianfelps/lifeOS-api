@@ -5,7 +5,8 @@ Todas as rotas exigem JWT Bearer e usam o usuario presente no token. Recursos de
 ## Convencoes
 
 - Valores monetarios usam BRL e `decimal(18,2)`.
-- Datas usam `yyyy-MM-dd`; meses sao normalizados para o primeiro dia.
+- Datas usam `yyyy-MM-dd`; a referencia de cada ciclo e o mes inicial informado na consulta.
+- O dia inicial do ciclo vem das preferencias do usuario e aceita valores de 1 a 28. Com o dia 10, o ciclo de setembro vai de 10/09 a 09/10; orcamentos permanecem associados ao mes de inicio do ciclo.
 - Dados realizados e orcamentos usam apenas transacoes `Confirmed`.
 - Projecoes usam transacoes `Confirmed` e `Planned`.
 - Uma planejada passada e retornada como `Overdue`, mas continua persistida como `Planned` ate confirmacao, edicao ou exclusao.
@@ -79,10 +80,10 @@ O valor e dividido em parcelas mensais e a primeira absorve o residuo de centavo
 
 | Metodo | Rota | Funcao |
 | --- | --- | --- |
-| GET | `/finances/reports/monthly-summary?month=2026-08-01` | Receitas, despesas e saldo realizado/projetado |
-| GET | `/finances/reports/monthly-comparison?from=2026-01-01&to=2026-08-01` | Serie de resumos mensais |
-| GET | `/finances/reports/cash-flow-projection?from=2026-01-01&to=2026-08-01` | Serie mensal de valores realizados e projetados |
-| GET | `/finances/reports/category-spending?month=2026-08-01` | Gasto, teto, saldo, percentual e alerta por categoria |
+| GET | `/finances/reports/monthly-summary?month=2026-08-01&billingCycleStartDay=10` | Receitas, despesas e saldo realizado/projetado |
+| GET | `/finances/reports/monthly-comparison?from=2026-01-01&to=2026-08-01&billingCycleStartDay=10` | Serie de resumos por ciclo |
+| GET | `/finances/reports/cash-flow-projection?from=2026-01-01&to=2026-08-01&billingCycleStartDay=10` | Serie de valores realizados e projetados por ciclo |
+| GET | `/finances/reports/category-spending?month=2026-08-01&billingCycleStartDay=10` | Gasto, teto, saldo, percentual e alerta por categoria |
 
 ## Auditoria e gamificacao
 
