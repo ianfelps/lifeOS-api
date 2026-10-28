@@ -55,7 +55,7 @@ docker compose --env-file .env.production -f docker-compose.migrate.production.y
 - Login aceita 10 requisicoes por IP a cada 15 minutos.
 - A API aceita 300 requisicoes por IP por minuto.
 - HSTS, headers de seguranca e suporte a headers encaminhados pelo Nginx sao habilitados em producao.
-- `POST /auth/register` cria a conta inicial e seus dados padrao somente quando nao ha usuarios ativos.
+- `POST /auth/register` e publico e cria uma conta com seus dados padrao. Nomes de usuario repetidos retornam `409`; o rate limit de login tambem se aplica ao cadastro.
 
 ## Supabase
 

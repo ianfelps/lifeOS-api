@@ -13,12 +13,12 @@ Este guia descreve as jornadas principais da API. Ele complementa os contratos d
 
 ## 1. Autenticacao
 
-### Criar conta inicial
+### Criar conta
 
-1. Quando ainda nao houver usuario ativo, o frontend envia `userName`, `displayName` e `password` para `POST /auth/register`.
+1. O frontend envia `userName`, `displayName` e `password` para `POST /auth/register`.
 2. A API cria a conta e os dados iniciais de financas, gamificacao e preferencias.
 3. O frontend envia as credenciais criadas para `POST /auth/login`.
-4. Depois da primeira conta, novas tentativas de cadastro retornam `409`.
+4. Um nome de usuario ja usado, inclusive por conta inativa, retorna `409`.
 
 ### Entrar
 

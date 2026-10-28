@@ -39,7 +39,7 @@ public interface IUserRepository
         CancellationToken cancellationToken = default);
 }
 
-public interface IInitialUserRegistrationRepository
+public interface IUserRegistrationRepository
 {
     Task<bool> CreateAsync(
         AppUser user,

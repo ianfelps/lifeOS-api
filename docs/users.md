@@ -4,11 +4,11 @@ Exceto por `POST /auth/register`, as rotas deste documento exigem JWT Bearer. A 
 
 Erros de validacao respondem `400`, credenciais invalidas respondem `401` e recursos ausentes respondem `404`. As respostas de erro usam `{ "message": "..." }`.
 
-## Cadastro inicial
+## Cadastro
 
 | Metodo | Rota | Funcao |
 | --- | --- | --- |
-| POST | `/auth/register` | Cria a unica conta e seus dados iniciais quando nao ha usuarios ativos. |
+| POST | `/auth/register` | Cria uma conta e seus dados iniciais. |
 
 Exemplo:
 
@@ -20,7 +20,7 @@ Exemplo:
 }
 ```
 
-A senha precisa respeitar `PasswordPolicy:MinimumLength`. O endpoint retorna `201` com `userId`, `userName` e `displayName`. Depois da primeira conta, retorna `409`.
+O nome de usuario aceita no maximo 120 caracteres e deve ser unico, inclusive entre contas inativas; o nome de exibicao aceita no maximo 160. A senha precisa respeitar `PasswordPolicy:MinimumLength`. O endpoint retorna `201` com `userId`, `userName` e `displayName`. Um nome de usuario indisponivel retorna `409`.
 
 ## Preferencias
 

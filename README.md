@@ -2,7 +2,7 @@
 
 API REST de um LifeOS pessoal para organizar finanças, hábitos, treinos, metas e gamificação. O projeto foi construído como ferramenta de uso diário e, principalmente, como laboratório pessoal para estudar modelagem de domínio, arquitetura em camadas, segurança de API, persistência relacional e evolução de um backend realista.
 
-O sistema parte de um único proprietário criado pelo primeiro cadastro. Embora os dados pertençam a um `UserId`, multi-tenancy, cadastro público permanente e colaboração não fazem parte do escopo atual.
+O sistema aceita várias contas por cadastro aberto em `POST /auth/register`. Cada conta é isolada: os dados pertencem a um `UserId` e nenhuma rota expõe recursos de outro usuário. Colaboração e compartilhamento entre contas não fazem parte do escopo atual.
 
 ## Domínios
 
@@ -92,14 +92,14 @@ Em desenvolvimento, a especificação OpenAPI está em `/openapi/v1.json` e a in
 
 ## Persistência e Dados Iniciais
 
-Cada entidade funcional pertence diretamente ao usuário autenticado. O primeiro cadastro cria a conta e seus dados iniciais:
+Cada entidade funcional pertence diretamente ao usuário autenticado. Cada cadastro cria a conta e seus dados iniciais:
 
 - Preferência inicial de carga em kg.
 - Categorias financeiras iniciais de receita e despesa.
 - Regras padrão de XP e progressão de nível.
 - Catálogo inicial de badges.
 
-O cadastro inicial é aceito somente quando não há usuários ativos. O modelo completo, relacionamentos, convenções de data e estratégias de exclusão estão em [`docs/entities.md`](docs/entities.md).
+O cadastro exige um nome de usuário único, inclusive entre contas inativas. O modelo completo, relacionamentos, convenções de data e estratégias de exclusão estão em [`docs/entities.md`](docs/entities.md).
 
 ## Requisitos Locais
 
@@ -114,9 +114,9 @@ Não versione `.env`, connection strings, segredos JWT ou credenciais reais.
 1. Copie `.env.example` para `.env`.
 2. Configure conexão, JWT, CORS, rate limiting e política de senha. Os valores de demonstração existem somente em `appsettings.Development.json`.
 3. Suba somente a infraestrutura definida em `docker-compose.dev.yml`.
-4. Execute a API pelo perfil de desenvolvimento do projeto e crie o usuário inicial por `POST /auth/register`.
+4. Execute a API pelo perfil de desenvolvimento do projeto e crie um usuário por `POST /auth/register`.
 
-Em desenvolvimento, a API aplica migrations pendentes. A criação inicial do usuário e dos dados padrão ocorre por `POST /auth/register`, nunca na inicialização da API.
+Em desenvolvimento, a API aplica migrations pendentes. A criação de usuários e dos dados padrão ocorre por `POST /auth/register`, nunca na inicialização da API.
 
 Variaveis relevantes:
 

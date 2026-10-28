@@ -8,7 +8,7 @@ namespace ServiceLifeOS.Application.Services;
 public sealed class AuthService
 {
     private readonly IUserRepository _users;
-    private readonly IInitialUserRegistrationRepository _initialUserRegistration;
+    private readonly IUserRegistrationRepository _userRegistration;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITokenService _tokenService;
     private readonly IUserSessionRepository _sessions;
@@ -18,7 +18,7 @@ public sealed class AuthService
 
     public AuthService(
         IUserRepository users,
-        IInitialUserRegistrationRepository initialUserRegistration,
+        IUserRegistrationRepository userRegistration,
         IPasswordHasher passwordHasher,
         ITokenService tokenService,
         IUserSessionRepository sessions,
@@ -27,7 +27,7 @@ public sealed class AuthService
         PasswordPolicyOptions? passwordPolicy = null)
     {
         _users = users;
-        _initialUserRegistration = initialUserRegistration;
+        _userRegistration = userRegistration;
         _passwordHasher = passwordHasher;
         _tokenService = tokenService;
         _sessions = sessions;
@@ -36,8 +36,8 @@ public sealed class AuthService
         _passwordPolicy = passwordPolicy ?? new PasswordPolicyOptions();
     }
 
-    public async Task<MeResponseDto> RegisterInitialUserAsync(
-        RegisterInitialUserRequestDto request,
+    public async Task<MeResponseDto> RegisterUserAsync(
+        RegisterUserRequestDto request,
         CancellationToken cancellationToken = default)
     {
         var userName = request.UserName?.Trim();
@@ -47,6 +47,10 @@ public sealed class AuthService
             string.IsNullOrWhiteSpace(request.Password))
         {
             throw new ArgumentException("User name, display name, and password are required.");
+        }
+        if (userName.Length > 120 || displayName.Length > 160)
+        {
+            throw new ArgumentException("User name or display name is too long.");
         }
         if (request.Password.Length < _passwordPolicy.MinimumLength)
         {
@@ -64,9 +68,9 @@ public sealed class AuthService
             CreatedAt = now,
             UpdatedAt = now
         };
-        if (!await _initialUserRegistration.CreateAsync(user, cancellationToken))
+        if (!await _userRegistration.CreateAsync(user, cancellationToken))
         {
-            throw new InvalidOperationException("The initial user has already been registered.");
+            throw new InvalidOperationException("User name is already in use.");
         }
 
         return new MeResponseDto
