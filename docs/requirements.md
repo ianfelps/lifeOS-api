@@ -6,7 +6,7 @@ O ServiceLifeOS e um sistema web pessoal para gerir financas, habitos, treinos e
 
 ## 2. Escopo e usuarios
 
-O MVP sera usado exclusivamente por um proprietario. A primeira conta sera criada por uma rota publica de configuracao inicial, indisponivel depois que houver um usuario ativo; nao havera cadastro publico permanente nem autenticacao por provedores externos.
+O sistema aceita varias contas, criadas por uma rota publica de cadastro. Cada conta acessa apenas os proprios dados; nao havera autenticacao por provedores externos.
 
 O produto sera disponibilizado como aplicacao web responsiva, com abordagem mobile-first e instalavel como PWA. A arquitetura pode manter preparacao para multiplos usuarios no futuro, mas multi-tenancy nao faz parte do comportamento funcional do MVP.
 
@@ -38,12 +38,12 @@ O produto sera disponibilizado como aplicacao web responsiva, com abordagem mobi
 - **RF03:** O sistema deve permitir que o proprietario encerre as demais sessoes ativas.
 - **RF04:** A expiracao de sessoes e a politica de senha devem ser definidas por configuracao segura do ambiente.
 - **RF05:** O dashboard deve exibir um resumo de financas, habitos do periodo, treinos e perfil de gamificacao, com acesso direto aos registros frequentes.
-- **RF05A:** O sistema deve permitir criar a conta inicial somente quando nao houver usuarios ativos, incluindo os dados padrao necessarios para uso da aplicacao.
+- **RF05A:** O sistema deve permitir criar contas por cadastro publico, com nome de usuario unico, incluindo os dados padrao necessarios para uso da aplicacao.
 
 **Criterios de aceitacao:**
 
 - Credenciais validas devem iniciar uma sessao autenticada; credenciais invalidas nao devem conceder acesso.
-- O cadastro inicial deve criar uma unica conta e retornar conflito em qualquer tentativa posterior.
+- O cadastro deve criar uma conta com nome de usuario unico e retornar conflito quando o nome ja estiver em uso.
 - A alteracao de senha deve exigir autenticacao do proprietario.
 - Ao encerrar as demais sessoes, os respectivos tokens devem deixar de autorizar novas requisicoes.
 
@@ -167,7 +167,7 @@ O produto sera disponibilizado como aplicacao web responsiva, com abordagem mobi
 
 ## 7. Fora do escopo do MVP
 
-- Cadastro publico permanente de usuarios, autenticacao social e recuperacao de senha.
+- Autenticacao social e recuperacao de senha.
 - Multi-tenancy e colaboracao entre usuarios.
 - Contas financeiras, carteiras, transferencias e anexos de comprovantes.
 - Recorrencias financeiras diarias ou semanais.

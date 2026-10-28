@@ -25,13 +25,13 @@ public sealed class AuthController : ControllerBase
     [AllowAnonymous]
     [HttpPost("register")]
     [EnableRateLimiting("login")]
-    public async Task<ActionResult<MeResponseDto>> RegisterInitialUser(
-        RegisterInitialUserRequestDto request,
+    public async Task<ActionResult<MeResponseDto>> RegisterUser(
+        RegisterUserRequestDto request,
         CancellationToken cancellationToken)
     {
         return StatusCode(
             StatusCodes.Status201Created,
-            await _authService.RegisterInitialUserAsync(request, cancellationToken));
+            await _authService.RegisterUserAsync(request, cancellationToken));
     }
 
     [HttpPost("login")]

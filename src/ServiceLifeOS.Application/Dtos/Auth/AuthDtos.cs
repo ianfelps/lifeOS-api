@@ -7,7 +7,7 @@ public sealed class LoginRequestDto
     public string? Password { get; set; }
 }
 
-public sealed class RegisterInitialUserRequestDto
+public sealed class RegisterUserRequestDto
 {
     public string? UserName { get; set; }
 

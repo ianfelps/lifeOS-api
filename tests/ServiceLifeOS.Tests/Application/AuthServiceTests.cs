@@ -9,15 +9,15 @@ namespace ServiceLifeOS.Tests.Application;
 public sealed class AuthServiceTests
 {
     [Fact]
-    public async Task RegisterInitialUser_CreatesTheOnlyUser()
+    public async Task RegisterUser_CreatesUser()
     {
-        var registrations = new FakeInitialUserRegistrationRepository();
+        var registrations = new FakeUserRegistrationRepository();
         var service = CreateService(
             new FakeUserSessionRepository(),
             new FakeTokenService(),
             registrations);
 
-        var response = await service.RegisterInitialUserAsync(new()
+        var response = await service.RegisterUserAsync(new()
         {
             UserName = "user",
             DisplayName = "User",
@@ -32,19 +32,38 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task RegisterInitialUser_RejectsRegistrationAfterTheFirstUser()
+    public async Task RegisterUser_RejectsUserNameAlreadyInUse()
     {
         var service = CreateService(
             new FakeUserSessionRepository(),
             new FakeTokenService(),
-            new FakeInitialUserRegistrationRepository { Created = false });
+            new FakeUserRegistrationRepository { Created = false });
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => service.RegisterInitialUserAsync(new()
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.RegisterUserAsync(new()
         {
             UserName = "user",
             DisplayName = "User",
             Password = "password-123"
         }));
+        Assert.Equal("User name is already in use.", exception.Message);
+    }
+
+    [Fact]
+    public async Task RegisterUser_RejectsUserNameThatIsTooLong()
+    {
+        var registrations = new FakeUserRegistrationRepository();
+        var service = CreateService(
+            new FakeUserSessionRepository(),
+            new FakeTokenService(),
+            registrations);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => service.RegisterUserAsync(new()
+        {
+            UserName = new string('u', 121),
+            DisplayName = "User",
+            Password = "password-123"
+        }));
+        Assert.Null(registrations.CreatedUser);
     }
 
     [Fact]
@@ -132,11 +151,11 @@ public sealed class AuthServiceTests
     private static AuthService CreateService(
         FakeUserSessionRepository sessions,
         FakeTokenService tokenService,
-        FakeInitialUserRegistrationRepository? registrations = null)
+        FakeUserRegistrationRepository? registrations = null)
     {
         return new AuthService(
             new FakeUserRepository(),
-            registrations ?? new FakeInitialUserRegistrationRepository(),
+            registrations ?? new FakeUserRegistrationRepository(),
             new FakePasswordHasher(),
             tokenService,
             sessions,
@@ -190,7 +209,7 @@ public sealed class AuthServiceTests
         }
     }
 
-    private sealed class FakeInitialUserRegistrationRepository : IInitialUserRegistrationRepository
+    private sealed class FakeUserRegistrationRepository : IUserRegistrationRepository
     {
         public bool Created { get; init; } = true;
 

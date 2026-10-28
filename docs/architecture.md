@@ -1,6 +1,6 @@
 # Arquitetura do ServiceLifeOS
 
-ServiceLifeOS usa uma separacao simples de ports and adapters para um unico proprietario.
+ServiceLifeOS usa uma separacao simples de ports and adapters com contas isoladas por usuario.
 
 ```text
 Api -> Application -> Domain

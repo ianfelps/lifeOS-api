@@ -4,13 +4,13 @@ using ServiceLifeOS.Domain.Entities;
 
 namespace ServiceLifeOS.Infrastructure.Persistence;
 
-public sealed class InitialUserRegistrationRepository : IInitialUserRegistrationRepository
+public sealed class UserRegistrationRepository : IUserRegistrationRepository
 {
-    private const long InitialUserRegistrationLockId = 421358;
+    private const long UserRegistrationLockId = 421358;
 
     private readonly AppDbContext _db;
 
-    public InitialUserRegistrationRepository(AppDbContext db)
+    public UserRegistrationRepository(AppDbContext db)
     {
         _db = db;
     }
@@ -21,9 +21,9 @@ public sealed class InitialUserRegistrationRepository : IInitialUserRegistration
     {
         await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         await _db.Database.ExecuteSqlRawAsync(
-            $"SELECT pg_advisory_xact_lock({InitialUserRegistrationLockId});",
+            $"SELECT pg_advisory_xact_lock({UserRegistrationLockId});",
             cancellationToken);
-        if (await _db.Users.AnyAsync(x => x.Active, cancellationToken))
+        if (await _db.Users.AnyAsync(x => x.UserName == user.UserName, cancellationToken))
         {
             return false;
         }
