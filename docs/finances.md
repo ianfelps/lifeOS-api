@@ -73,8 +73,11 @@ As ocorrencias sao materializadas de forma idempotente em consultas e operacoes 
 | POST | `/finances/installment-purchases` | Cria compra e parcelas mensais |
 | GET | `/finances/installment-purchases/{purchaseId}` | Consulta compra e parcelas ativas |
 | PUT | `/finances/installment-purchases/{purchaseId}` | Edita compra e substitui somente parcelas futuras nao confirmadas |
+| DELETE | `/finances/installment-purchases/{purchaseId}` | Exclui a compra e todas as suas parcelas |
 
-O valor e dividido em parcelas mensais e a primeira absorve o residuo de centavos. Parcelas confirmadas sao imutaveis. A alteracao nao pode reduzir o total abaixo do confirmado nem definir menos parcelas que as ja confirmadas.
+O valor e dividido em parcelas mensais e a primeira absorve o residuo de centavos. Parcelas confirmadas sao imutaveis na edicao da compra. A alteracao nao pode reduzir o total abaixo do confirmado nem definir menos parcelas que as ja confirmadas.
+
+Uma parcela especifica pode ser excluida por `DELETE /finances/transactions/{transactionId}`. A compra passa a ter como total a soma das parcelas restantes, a quantidade e reduzida e as parcelas restantes sao renumeradas em sequencia. Ao excluir a ultima parcela restante, a compra tambem e removida. Exclusoes de parcelas confirmadas geram reversao de XP como qualquer transacao.
 
 ## Relatorios
 
