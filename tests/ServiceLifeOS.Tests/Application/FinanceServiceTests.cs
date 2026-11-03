@@ -173,6 +173,98 @@ public sealed class FinanceServiceTests
     }
 
     [Fact]
+    public async Task DeleteInstallmentPurchase_DeletesAllInstallmentsAndReversesXp()
+    {
+        var (repository, purchaseId, installments) = CreatePurchaseWithInstallments();
+        var grant = new XpLedgerEntry
+        {
+            UserId = "user-1",
+            Type = XpLedgerEntryType.Grant,
+            Amount = 10,
+            EventType = XpEventType.TransactionConfirmed,
+            SourceType = "FinancialTransaction",
+            SourceId = installments[0].Id
+        };
+        repository.XpEntries.Add(grant);
+        var service = CreateService(repository);
+
+        await service.DeleteInstallmentPurchaseAsync("user-1", purchaseId);
+
+        Assert.Empty(repository.Purchases);
+        Assert.All(installments, x => Assert.NotNull(x.DeletedAt));
+        Assert.Contains(
+            repository.XpEntries,
+            x => x.Type == XpLedgerEntryType.Reversal && x.ReversedEntryId == grant.Id);
+    }
+
+    [Fact]
+    public async Task DeleteTransaction_SingleInstallmentUpdatesPurchaseAndRenumbers()
+    {
+        var (repository, purchaseId, installments) = CreatePurchaseWithInstallments();
+        var service = CreateService(repository);
+
+        await service.DeleteTransactionAsync("user-1", installments[1].Id);
+
+        var purchase = Assert.Single(repository.Purchases);
+        Assert.NotNull(installments[1].DeletedAt);
+        Assert.Equal(2, purchase.InstallmentCount);
+        Assert.Equal(66.67m, purchase.TotalAmount);
+        Assert.Equal(1, installments[0].InstallmentNumber);
+        Assert.Equal(2, installments[2].InstallmentNumber);
+        var result = await service.GetInstallmentPurchaseAsync("user-1", purchaseId);
+        Assert.Equal(2, result.Installments.Count);
+    }
+
+    [Fact]
+    public async Task DeleteTransaction_LastRemainingInstallmentRemovesPurchase()
+    {
+        var (repository, _, installments) = CreatePurchaseWithInstallments();
+        var service = CreateService(repository);
+
+        foreach (var installment in installments)
+        {
+            await service.DeleteTransactionAsync("user-1", installment.Id);
+        }
+
+        Assert.Empty(repository.Purchases);
+        Assert.All(installments, x => Assert.NotNull(x.DeletedAt));
+    }
+
+    private static (FakeFinanceRepository Repository, Guid PurchaseId, FinancialTransaction[] Installments)
+        CreatePurchaseWithInstallments()
+    {
+        var categoryId = Guid.NewGuid();
+        var purchaseId = Guid.NewGuid();
+        var repository = new FakeFinanceRepository();
+        repository.Categories.Add(new() { Id = categoryId, UserId = "user-1", Type = FinancialCategoryType.Expense });
+        repository.Purchases.Add(new()
+        {
+            Id = purchaseId,
+            UserId = "user-1",
+            CategoryId = categoryId,
+            TotalAmount = 100,
+            InstallmentCount = 3
+        });
+        var installments = new[] { 33.34m, 33.33m, 33.33m }
+            .Select((amount, index) => new FinancialTransaction
+            {
+                Id = Guid.NewGuid(),
+                UserId = "user-1",
+                CategoryId = categoryId,
+                InstallmentPurchaseId = purchaseId,
+                InstallmentNumber = index + 1,
+                Amount = amount,
+                TransactionDate = new DateOnly(2026, 8 + index, 1),
+                Type = FinancialCategoryType.Expense,
+                PaymentMethod = PaymentMethod.InstallmentCredit,
+                Status = index == 0 ? TransactionStatus.Confirmed : TransactionStatus.Planned
+            })
+            .ToArray();
+        repository.Transactions.AddRange(installments);
+        return (repository, purchaseId, installments);
+    }
+
+    [Fact]
     public async Task GetCategorySpending_ReturnsAtLimitAlertAtOneHundredPercent()
     {
         var categoryId = Guid.NewGuid();
@@ -324,6 +416,7 @@ public sealed class FinanceServiceTests
         {
             if (entity is CategoryBudgetOverride overrideValue) Overrides.Remove(overrideValue);
             if (entity is UserBadge userBadge) UserBadges.Remove(userBadge);
+            if (entity is InstallmentPurchase purchase) Purchases.Remove(purchase);
             return Task.CompletedTask;
         }
     }

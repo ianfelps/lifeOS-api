@@ -197,6 +197,18 @@ public sealed class FinancesController : ControllerBase
             request,
             cancellationToken);
 
+    [HttpDelete("installment-purchases/{purchaseId:guid}")]
+    public async Task<IActionResult> DeleteInstallmentPurchase(
+        Guid purchaseId,
+        CancellationToken cancellationToken)
+    {
+        await _financeService.DeleteInstallmentPurchaseAsync(
+            _currentUser.UserId,
+            purchaseId,
+            cancellationToken);
+        return NoContent();
+    }
+
     [HttpGet("reports/monthly-summary")]
     public Task<MonthlySummaryResponseDto> GetMonthlySummary(
         [FromQuery] DateOnly month,

@@ -282,14 +282,14 @@ public sealed class FinanceService
     public async Task DeleteTransactionAsync(string userId, Guid transactionId, CancellationToken cancellationToken = default)
     {
         var transaction = await RequiredTransactionAsync(userId, transactionId, cancellationToken);
-        if (transaction.InstallmentPurchaseId.HasValue)
-        {
-            throw new InvalidOperationException("Installments must be edited through their purchase.");
-        }
         transaction.DeletedAt = DateTime.UtcNow;
         transaction.UpdatedAt = transaction.DeletedAt.Value;
         await SyncTransactionXpAsync(transaction, transaction.UpdatedAt, cancellationToken);
         await AuditAsync(userId, AuditAction.Deleted, "FinancialTransaction", transaction.Id, null, transaction, transaction.UpdatedAt, cancellationToken);
+        if (transaction.InstallmentPurchaseId is { } purchaseId)
+        {
+            await DetachDeletedInstallmentAsync(userId, purchaseId, transaction, cancellationToken);
+        }
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         if (_gamification is not null) await _gamification.RefreshAsync(userId, cancellationToken);
     }
@@ -415,6 +415,24 @@ public sealed class FinanceService
         return MapPurchase(purchase, confirmed.Concat(replacement));
     }
 
+    public async Task DeleteInstallmentPurchaseAsync(string userId, Guid purchaseId, CancellationToken cancellationToken = default)
+    {
+        var purchase = await RequiredInstallmentPurchaseAsync(userId, purchaseId, cancellationToken);
+        var installments = (await _finances.GetTransactionsForInstallmentPurchaseAsync(userId, purchaseId, cancellationToken)).Where(x => x.DeletedAt is null).ToArray();
+        var now = DateTime.UtcNow;
+        foreach (var installment in installments)
+        {
+            installment.DeletedAt = now;
+            installment.UpdatedAt = now;
+            await SyncTransactionXpAsync(installment, now, cancellationToken);
+            await AuditAsync(userId, AuditAction.Deleted, "FinancialTransaction", installment.Id, null, installment, now, cancellationToken);
+        }
+        await AuditAsync(userId, AuditAction.Deleted, "InstallmentPurchase", purchase.Id, purchase, null, now, cancellationToken);
+        await _finances.RemoveAsync(purchase, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (_gamification is not null) await _gamification.RefreshAsync(userId, cancellationToken);
+    }
+
     public async Task<InstallmentPurchaseResponseDto> GetInstallmentPurchaseAsync(string userId, Guid purchaseId, CancellationToken cancellationToken = default)
     {
         var purchase = await RequiredInstallmentPurchaseAsync(userId, purchaseId, cancellationToken);
@@ -519,6 +537,35 @@ public sealed class FinanceService
             await _finances.AddRangeAsync(created, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
+    }
+
+    private async Task DetachDeletedInstallmentAsync(string userId, Guid purchaseId, FinancialTransaction deleted, CancellationToken cancellationToken)
+    {
+        var purchase = await _finances.GetInstallmentPurchaseAsync(userId, purchaseId, cancellationToken);
+        if (purchase is null) return;
+        var remaining = (await _finances.GetTransactionsForInstallmentPurchaseAsync(userId, purchaseId, cancellationToken))
+            .Where(x => x.DeletedAt is null && x.Id != deleted.Id)
+            .OrderBy(x => x.InstallmentNumber)
+            .ThenBy(x => x.TransactionDate)
+            .ToArray();
+        var now = deleted.UpdatedAt;
+        if (remaining.Length == 0)
+        {
+            await AuditAsync(userId, AuditAction.Deleted, "InstallmentPurchase", purchase.Id, purchase, null, now, cancellationToken);
+            await _finances.RemoveAsync(purchase, cancellationToken);
+            return;
+        }
+        for (var index = 0; index < remaining.Length; index++)
+        {
+            var number = index + 1;
+            if (remaining[index].InstallmentNumber == number) continue;
+            remaining[index].InstallmentNumber = number;
+            remaining[index].UpdatedAt = now;
+        }
+        purchase.TotalAmount = remaining.Sum(x => x.Amount);
+        purchase.InstallmentCount = remaining.Length;
+        purchase.UpdatedAt = now;
+        await AuditAsync(userId, AuditAction.Updated, "InstallmentPurchase", purchase.Id, null, purchase, now, cancellationToken);
     }
 
     private async Task SyncTransactionXpAsync(FinancialTransaction transaction, DateTime now, CancellationToken cancellationToken)
